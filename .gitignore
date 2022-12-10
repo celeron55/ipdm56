@@ -1,0 +1,5 @@
+.*
+!.gitignore
+local
+session.vim
+export
