@@ -27,6 +27,7 @@ namespace ipdm
 constexpr int CAN1_CS_PIN = 10;
 constexpr int CAN2_CS_PIN = 9;
 constexpr int POWERSW_PIN = 8;
+constexpr int VBAT_PIN = A7;
 
 constexpr int ED0 = 5600;
 constexpr int ED1 = 5601;
@@ -47,5 +48,6 @@ constexpr int HOUT4 = 5613;
 constexpr int HOUT5 = 5614;
 constexpr int HOUT6 = 5615;
 
+constexpr int VUSB_PIN = ED3;
 
 }

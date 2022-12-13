@@ -82,7 +82,7 @@ void loop()
 		REPORT_UINT16_HYS(analogRead(A2), 50);
 		REPORT_UINT16_HYS(analogRead(A3), 50);
 		REPORT_UINT16_HYS(analogRead(A6), 50);
-		REPORT_UINT16_HYS(analogRead(A7), 50);
+		REPORT_UINT16_HYS(analogRead_mV_factor16(ipdm::VBAT_PIN, ipdm::ADC_FACTOR16_VBAT), 50);
 	}
 
 	// Do a fancy demo cycle on all outputs and the ED0...ED3 lines

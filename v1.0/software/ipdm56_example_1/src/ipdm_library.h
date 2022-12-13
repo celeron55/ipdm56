@@ -20,9 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "can_common.h"
 #include "mcp_can.h"
 #include "ipdm_io.h"
+#include "ipdm_util.h"
 
 namespace ipdm
 {
+
+// NOTE: Actual resistors are (18, 10), but the TVS mixes things up
+static constexpr uint32_t ADC_FACTOR16_VBAT = ADC_FACTOR16_MV_RESISTORS(21, 10);
 
 // This should be called as first thing in the application setup()
 void setup();
@@ -30,10 +34,14 @@ void setup();
 // This housekeeping function should be called in the application loop()
 void loop();
 
-// This allows switching off the switched 5V rail, for power saving purposes.
+// This allows switching off the switched 5V rail (5Vsw), for power saving
+// purposes.
 // This switches off the CAN controllers and PHYs also
 void enable_switched_5v();
 void disable_switched_5v();
+// This allows monitoring the 5Vsw line. It may be OFF even if it's been
+// enabled, due to missing Vbat.
+bool status_switched_5v();
 
 void pinMode(int pin, uint8_t mode);
 void digitalWrite(int pin, bool state);

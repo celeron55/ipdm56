@@ -17,7 +17,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include "ipdm_library.h"
-#include "ipdm_util.h"
 #include "mcp_can.h"
 #include "ipdm_pca9539.hpp"
 
@@ -33,8 +32,10 @@ CanParameters can1_params;
 CanParameters can2_params;
 
 static bool can_initialized = false;
-static bool switched_5v_enabled = false;
+static bool switched_5v_ok = false;
 static uint32_t active_clock_divider = 1;
+
+static constexpr uint16_t MIN_VBAT_MV_FOR_5VSW = 7000;
 
 void setup()
 {
@@ -145,16 +146,24 @@ void can_receive(MCP_CAN &mcp_can, void (*handle_frame)(const CAN_FRAME &frame))
 
 void loop()
 {
-	EVERY_N_MILLISECONDS(2000){
-		if(switched_5v_enabled && !can_initialized){
+	EVERY_N_MILLISECONDS(500){
+		bool was_ok = switched_5v_ok;
+		switched_5v_ok = (analogRead_mV_factor16(VBAT_PIN, ADC_FACTOR16_VBAT) >= MIN_VBAT_MV_FOR_5VSW && digitalRead(POWERSW_PIN));
+		if(switched_5v_ok && !can_initialized){
 			try_can_init();
+			if(can_initialized){
+				CONSOLE.println("-!- 5Vsw ok; CAN initialized");
+			}
+		}
+		if(!switched_5v_ok){
+			can_initialized = false;
 		}
 	}
 }
 
 void enable_switched_5v()
 {
-	if(switched_5v_enabled)
+	if(digitalRead(POWERSW_PIN))
 		return;
 
 	CONSOLE.println("-!- 5Vsw ON");
@@ -165,26 +174,33 @@ void enable_switched_5v()
 	// At about 140ms and below the startup console messages seem to get weird
 	delay(200);
 
-	try_can_init();
+	if(analogRead_mV_factor16(VBAT_PIN, ADC_FACTOR16_VBAT) >= MIN_VBAT_MV_FOR_5VSW){
+		switched_5v_ok = true;
 
-	if(!can_initialized){
-		CONSOLE.println("-!- CAN interfaces failed to initialize. Keep in mind that"
-				"12V input is needed to power up the switched 5V rail (5Vsw).");
+		try_can_init();
+
+		if(!can_initialized){
+			CONSOLE.println("-!- CAN interfaces failed to initialize. Keep in mind that"
+					"12V input is needed to power up the switched 5V rail (5Vsw).");
+		}
 	}
-
-	switched_5v_enabled = true;
 }
 
 void disable_switched_5v()
 {
-	if(!switched_5v_enabled)
+	if(!digitalRead(POWERSW_PIN))
 		return;
 
 	CONSOLE.println("-!- 5Vsw OFF");
 
 	digitalWrite(POWERSW_PIN, LOW);
 
-	switched_5v_enabled = false;
+	switched_5v_ok = false;
+}
+
+bool status_switched_5v()
+{
+	return switched_5v_ok;
 }
 
 void pinMode(int pin, uint8_t mode)

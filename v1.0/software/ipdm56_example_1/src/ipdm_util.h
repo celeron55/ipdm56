@@ -27,22 +27,12 @@ namespace ipdm
 // NOTE: Keep in mind this value will overflow at 4294967296ms
 // NOTE: This will roughly take into account the system clock prescaler set by
 // set_clock_prescaler()
-static unsigned long timestamp_age(unsigned long timestamp_ms)
-{
-	return (millis() - timestamp_ms) * get_active_clock_divider();
-}
+unsigned long timestamp_age(unsigned long timestamp_ms);
 
 // NOTE: Keep in mind this uses the value that will overflow at 4294967296ms
 // NOTE: This will roughly take into account the system clock prescaler set by
 // set_clock_prescaler()
-static bool timestamp_younger_than(unsigned long timestamp_ms, unsigned long max_age)
-{
-	// Timestamp is assumed to be initialized to 0. This means that a timestamp
-	// of 0 is infinitely old.
-	if(timestamp_ms == 0)
-		return false;
-	return timestamp_age(timestamp_ms) < max_age;
-}
+bool timestamp_younger_than(unsigned long timestamp_ms, unsigned long max_age);
 
 static bool ENM_compare_and_update(unsigned long &t0, const unsigned long &interval)
 {
@@ -73,6 +63,17 @@ static void util_print_timestamp(Stream &dst)
 		snprintf(format_buf, sizeof format_buf, "%02ih%02im%02i.%03is: ", h, m, s, ms);
 	dst.print(format_buf);
 }
+
+// Macros for reading resistor divided ADC pins directly to voltage
+
+#define ADC_FACTOR_MV_RESISTORS(highohm, lowohm) (5000.0f / 1024.0f * ((float)(highohm) + (float)(lowohm)) / float(lowohm))
+#define ADC_FACTOR16_MV_RESISTORS(highohm, lowohm) (uint32_t)(65536.0f * ADC_FACTOR_MV_RESISTORS(highohm, lowohm))
+#define ADC_VAL_TO_MV_FACTOR16(adc, factor16) (uint16_t)(((uint32_t)(adc) * (factor16)) >> 16)
+#define ADC_VAL_TO_MV_RESISTORS(adc, highohm, lowohm) ADC_VAL_TO_MV_FACTOR16(adc, ADC_FACTOR16_MV_RESISTORS(highohm, lowohm))
+#define analogRead_mV_factor16(pin, factor16) ADC_VAL_TO_MV_FACTOR16(analogRead(pin), factor16)
+#define analogRead_mV_resistors(pin, highohm, lowohm) ADC_VAL_TO_MV_RESISTORS(analogRead(pin), highohm, lowohm)
+
+// Macros for reporting value changes on console
 
 #define REPORT_BOOL(var) \
 	{\
