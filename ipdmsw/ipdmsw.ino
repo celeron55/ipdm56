@@ -1,5 +1,5 @@
 /*
-ipdm56_example_1 - iPDM56 firmware
+ipdmsw - iPDM56 firmware template
 Copyright (c) 2022 Perttu "celeron55" Ahola
 
 This program is free software: you can redistribute it and/or modify
