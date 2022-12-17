@@ -48,6 +48,9 @@ constexpr int HOUT4 = 5613;
 constexpr int HOUT5 = 5614;
 constexpr int HOUT6 = 5615;
 
+constexpr int AOUT1 = 5;
+constexpr int AOUT2 = 6;
+
 constexpr int VUSB_PIN = ED3;
 
 }
