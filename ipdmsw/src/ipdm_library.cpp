@@ -64,20 +64,6 @@ static bool can_init(MCP_CAN &can, const CanParameters &params, const char *log_
 		delay(100);
 	}
 
-	// TODO: Remove
-#if 1
-	if(can.init_Mask(0, false, 0x0fff << 16) == MCP2515_FAIL) goto filter_fail;
-	if(can.init_Filt(0, false, 0x0123 << 16) == MCP2515_FAIL) goto filter_fail;
-	if(can.init_Filt(1, false, 0x0123 << 16) == MCP2515_FAIL) goto filter_fail;
-
-	if(can.init_Mask(1, false, 0x0000 << 16) == MCP2515_FAIL) goto filter_fail;
-	if(can.init_Filt(2, false, 0x0fff << 16) == MCP2515_FAIL) goto filter_fail;
-	if(can.init_Filt(3, false, 0x0fff << 16) == MCP2515_FAIL) goto filter_fail;
-	if(can.init_Filt(4, false, 0x0fff << 16) == MCP2515_FAIL) goto filter_fail;
-	if(can.init_Filt(5, false, 0x0fff << 16) == MCP2515_FAIL) goto filter_fail;
-#endif
-	
-#if 0
 	if(can.init_Mask(0, params.filter1_extended_id,
 			params.filter1_extended_id ? params.filter1_mask : (params.filter1_mask << 16))
 			== MCP2515_FAIL) goto filter_fail;
@@ -103,7 +89,6 @@ static bool can_init(MCP_CAN &can, const CanParameters &params, const char *log_
 	if(can.init_Filt(5, params.filter2_extended_id,
 			params.filter2_extended_id ? params.filter2_ids[3] : (params.filter2_ids[3] << 16))
 			== MCP2515_FAIL) goto filter_fail;
-#endif
 
 	return true;
 
