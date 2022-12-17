@@ -42,6 +42,7 @@ void setup()
 	// Set LOUT1...LOUT6, HOUT1...HOUT6 as outputs
 	for(uint8_t i=4; i<16; i++){
 		pca9539.pinMode(i, OUTPUT);
+		pca9539.digitalWrite(i, LOW);
 	}
 }
 
