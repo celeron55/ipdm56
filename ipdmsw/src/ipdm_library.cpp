@@ -132,9 +132,12 @@ void can_receive(MCP_CAN &mcp_can, void (*handle_frame)(const CAN_FRAME &frame))
 
 void loop()
 {
-	EVERY_N_MILLISECONDS(500){
-		bool was_ok = switched_5v_ok;
+	EVERY_N_MILLISECONDS(100){
+		bool switched_5v_ok_was = switched_5v_ok;
 		switched_5v_ok = (analogRead_mV_factor16(VBAT_PIN, ADC_FACTOR16_VBAT) >= MIN_VBAT_MV_FOR_5VSW && digitalRead(POWERSW_PIN));
+
+		REPORT_BOOL(switched_5v_ok);
+
 		if(switched_5v_ok && !can_initialized){
 			try_can_init();
 			if(can_initialized){
@@ -152,8 +155,6 @@ void enable_switched_5v()
 	if(digitalRead(POWERSW_PIN))
 		return;
 
-	CONSOLE.println("-!- 5Vsw ON");
-
 	pinMode(POWERSW_PIN, OUTPUT);
 	digitalWrite(POWERSW_PIN, HIGH);
 
@@ -162,6 +163,8 @@ void enable_switched_5v()
 
 	if(analogRead_mV_factor16(VBAT_PIN, ADC_FACTOR16_VBAT) >= MIN_VBAT_MV_FOR_5VSW){
 		switched_5v_ok = true;
+
+		CONSOLE.println("-!- 5Vsw ON");
 
 		try_can_init();
 
