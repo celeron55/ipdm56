@@ -48,13 +48,13 @@ static void util_print_timestamp(Stream &dst)
 {
 	char format_buf[17];
 	uint32_t t = millis();
-	uint32_t ms = t % 1000;
+	int ms = t % 1000;
 	t /= 1000;
-	uint32_t s = t % 60;
+	int s = t % 60;
 	t /= 60;
-	uint32_t m = t % 60;
+	int m = t % 60;
 	t /= 60;
-	uint32_t h = t;
+	int h = t;
 	if(h == 0 && m == 0)
 		snprintf(format_buf, sizeof format_buf, "%02i.%03is: ", s, ms);
 	else if(h == 0)
@@ -89,6 +89,17 @@ static void util_print_timestamp(Stream &dst)
 		}\
 	}
 
+#define REPORT_UINT8(var) \
+	{\
+		static uint8_t reported_value = 0;\
+		if(var != reported_value){\
+			::ipdm::util_print_timestamp(CONSOLE);\
+			CONSOLE.print(F(">> "#var" = "));\
+			CONSOLE.println((uint16_t)var);\
+			reported_value = var;\
+		}\
+	}
+
 #define REPORT_UINT16(var) \
 	{\
 		static uint16_t reported_value = 0;\
@@ -103,6 +114,17 @@ static void util_print_timestamp(Stream &dst)
 #define REPORT_UINT32(var) \
 	{\
 		static uint32_t reported_value = 0;\
+		if(var != reported_value){\
+			::ipdm::util_print_timestamp(CONSOLE);\
+			CONSOLE.print(F(">> "#var" = "));\
+			CONSOLE.println(var);\
+			reported_value = var;\
+		}\
+	}
+
+#define REPORT_INT8(var) \
+	{\
+		static int8_t reported_value = 0;\
 		if(var != reported_value){\
 			::ipdm::util_print_timestamp(CONSOLE);\
 			CONSOLE.print(F(">> "#var" = "));\
@@ -231,5 +253,32 @@ static void util_print_timestamp(Stream &dst)
 	}
 
 #define DEBUG_PRINT_LOCATION(delay_ms) { CONSOLE.print(__FILE__ ":"); CONSOLE.println(__LINE__); delay(delay_ms); }
+
+static uint16_t limit_uint16(uint16_t v, uint16_t min, uint16_t max)
+{
+	if(v < min)
+		return min;
+	if(v > max)
+		return max;
+	return v;
+}
+
+static int16_t limit_int16(int16_t v, int16_t min, int16_t max)
+{
+	if(v < min)
+		return min;
+	if(v > max)
+		return max;
+	return v;
+}
+
+static int32_t limit_int32(int32_t v, int32_t min, int32_t max)
+{
+	if(v < min)
+		return min;
+	if(v > max)
+		return max;
+	return v;
+}
 
 } // namespace idpm
