@@ -19,8 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "src/ipdm_library.h"
 #include "src/ipdm_util.h"
 
-// Set this to false if you want 5Vsw to be always powered when Vbat is up
-constexpr bool D7_IGNITION_SWITCHED_5V = true;
+constexpr int IGNITION_PIN = 7;
 
 void setup()
 {
@@ -47,16 +46,12 @@ void loop()
 {
 	ipdm::loop();
 
-#if D7_IGNITION_SWITCHED_5V
 	// Consider D7 / IN10 to be the ignition pin and switch 5Vsw according to it
-	if(digitalRead(7)){
+	if(digitalRead(IGNITION_PIN)){
 		ipdm::enable_switched_5v();
 	} else {
 		ipdm::disable_switched_5v();
 	}
-#else
-	ipdm::enable_switched_5v();
-#endif
 
 	// Read incoming CAN1 frames
 	ipdm::can_receive(ipdm::can1, handle_can1_frame);
