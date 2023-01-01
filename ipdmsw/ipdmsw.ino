@@ -103,6 +103,34 @@ void loop()
 		ipdm::digitalWrite(POWER_STEERING_POWER_PIN, power_steering_power);
 		REPORT_BOOL(power_steering_power);
 	}
+
+	// Do a fancy demo cycle on all outputs (except POWER_STEERING_POWER_PIN =
+	// ipdm::HOUT2 which is used in the example code above)
+	EVERY_N_MILLISECONDS(1000){
+		static uint8_t counter = 0;
+		counter++;
+		if(counter >= 3)
+			counter = 0;
+
+		Serial.print("Demo counter: ");
+		Serial.println(counter);
+
+		ipdm::digitalWrite(ipdm::HOUT1, counter == 0);
+		//ipdm::digitalWrite(ipdm::HOUT2, counter == 1);
+		ipdm::digitalWrite(ipdm::HOUT3, counter == 2);
+
+		ipdm::digitalWrite(ipdm::HOUT4, counter == 1);
+		ipdm::digitalWrite(ipdm::HOUT5, counter == 1);
+		ipdm::digitalWrite(ipdm::HOUT6, counter == 1);
+
+		ipdm::digitalWrite(ipdm::LOUT1, counter == 0);
+		ipdm::digitalWrite(ipdm::LOUT2, counter == 1);
+		ipdm::digitalWrite(ipdm::LOUT3, counter == 2);
+
+		ipdm::digitalWrite(ipdm::LOUT4, counter == 0);
+		ipdm::digitalWrite(ipdm::LOUT5, counter == 1);
+		ipdm::digitalWrite(ipdm::LOUT6, counter == 2);
+	}
 }
 
 void handle_can1_frame(const CAN_FRAME &frame)
