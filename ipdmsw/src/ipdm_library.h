@@ -66,6 +66,13 @@ void set_clock_prescaler(uint8_t prescaler_bit);
 // Returns the actual divider value in use (not the prescaler bit)
 uint32_t get_active_clock_divider();
 
+// This delay is able to compensate for the clock divider, unlike Arduino's
+// delay().
 void delay(unsigned long ms);
+
+// This function does not return until the time has passed
+// NOTE: Outputs will be left in their current state and may consume power
+// NOTE: Returns with clock prescaler set to 0 = 16MHz
+void maximum_power_save_mode(unsigned long duration_ms);
 
 } // namespace ipdm
