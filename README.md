@@ -1,6 +1,17 @@
 iPDM56
 ======
 
+The hardware
+------------
+Please check the README.md of your chosen hardware version in its subdirectory.
+
+The software
+------------
+A GPL 3 licensed utility library and example code is available in the `ipdmsw`
+subdirectory.
+
+The idea
+--------
 The iPDM56 is an intelligent power distribution module. It's basically an
 atmega32-based arduino with 6x low-side and 6x high-side 3A PPTC protected
 MOSFET outputs. The inputs are protected by resistors and TVSes and filtered by
@@ -38,6 +49,5 @@ the small program memory.
 
 Have fun.
 
-Please check the README.md of your chosen hardware version in its subdirectory.
-
 - celeron55 @ 8Dromeda Productions
+

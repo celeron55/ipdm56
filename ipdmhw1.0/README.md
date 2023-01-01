@@ -4,6 +4,8 @@ iPDM56 v1.0
 iPDM56 v1.0 fixing the board
 ----------------------------
 
+NOTE: See photos in doc/flashing/
+
 There are 2 bugs on the v1.0 board. This is what you need to do to get it working:
 - Cut the trace next to U21 pin 10 (the one nearest to the edge of the board)
 - Solder a 1k resistor across the cut. 0805 or smaller should fit fine.
