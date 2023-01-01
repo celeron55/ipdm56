@@ -50,7 +50,5 @@ These will be the default connections in v1.1, so connecting them like so in v1.
 
 More pin mapping conventions worth following:
 
-- Use HOUT1/ED0 as the ignition input. Future code releases will use this mapping. Using HOUT allows activating the ignition line via software, and monitoring it when not being activated by the ipdm.
-
 - M1...M4 are generally intended to be wired to Vbat, 5Vsw or 5Vp, depending on the application's requirements. This way they are used to provide power to switches and sensors.
  
