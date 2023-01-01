@@ -24,6 +24,10 @@ namespace ipdm
 //static auto& CONSOLE = Serial;
 #define CONSOLE Serial
 
+// NOTE: Remember to use ipdm::digitalRead/Write when accessing the high
+//       numbered pins, as the Arduino native function does not understand them
+//       and does not give out any error either
+
 constexpr int CAN1_CS_PIN = 10;
 constexpr int CAN2_CS_PIN = 9;
 constexpr int POWERSW_PIN = 8;

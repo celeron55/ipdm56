@@ -1,6 +1,6 @@
 /*
 ipdmsw - iPDM56 firmware template
-Copyright (c) 2022 Perttu "celeron55" Ahola
+Copyright (c) 2023 Perttu "celeron55" Ahola
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,12 +18,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "src/ipdm_library.h"
 #include "src/ipdm_util.h"
+#include "src/ipdm_can.h"
+#include "src/params.h"
 
 constexpr int IGNITION_PIN = 7;
+constexpr int POWER_STEERING_POWER_PIN = ipdm::HOUT2;
 
 void setup()
 {
 	ipdm::setup();
+
+	pinMode(IGNITION_PIN, INPUT);
 
 	Serial.begin(115200);
 
@@ -46,14 +51,19 @@ void loop()
 {
 	ipdm::loop();
 
-	// Consider D7 / IN10 to be the ignition pin and switch 5Vsw according to it
+	EVERY_N_MILLISECONDS(30000){
+		ipdm::util_print_timestamp(Serial);
+		Serial.println("-!- iPDM56 running");
+	}
+
+	// Consider D7 (IN10) to be the ignition pin and switch 5Vsw according to it
 	if(digitalRead(IGNITION_PIN)){
 		ipdm::enable_switched_5v();
 	} else {
 		ipdm::disable_switched_5v();
 	}
 
-	// Read incoming CAN1 frames
+	// Read incoming CAN frames
 	ipdm::can_receive(ipdm::can1, handle_can1_frame);
 	ipdm::can_receive(ipdm::can2, handle_can2_frame);
 
@@ -78,63 +88,102 @@ void loop()
 		REPORT_BOOL(digitalRead(2));
 		REPORT_BOOL(digitalRead(3));
 		REPORT_BOOL(digitalRead(4));
-		REPORT_BOOL(digitalRead(7));
+		REPORT_BOOL(digitalRead(IGNITION_PIN));
 		REPORT_UINT16_HYS(analogRead(A0), 50);
 		REPORT_UINT16_HYS(analogRead(A1), 50);
 		REPORT_UINT16_HYS(analogRead(A2), 50);
 		REPORT_UINT16_HYS(analogRead(A3), 50);
 		REPORT_UINT16_HYS(analogRead(A6), 50);
-		REPORT_UINT16_HYS(analogRead_mV_factor16(ipdm::VBAT_PIN, ipdm::ADC_FACTOR16_VBAT), 50);
+		REPORT_UINT16_HYS(analogRead_mV_factor16(ipdm::VBAT_PIN, ipdm::ADC_FACTOR16_VBAT), 100);
 	}
 
-	// Do a fancy demo cycle on all outputs and the ED0...ED3 lines
+	// Example: Control power steering pump in the simplest possible way
 	EVERY_N_MILLISECONDS(1000){
-		// NOTE: ED0...ED3 can also be used as digital inputs
-		ipdm::digitalWrite(ipdm::ED0, !ipdm::digitalRead(ipdm::ED0));
-		ipdm::digitalWrite(ipdm::ED1, !ipdm::digitalRead(ipdm::ED1));
-		ipdm::digitalWrite(ipdm::ED2, !ipdm::digitalRead(ipdm::ED2));
-		ipdm::digitalWrite(ipdm::ED3, !ipdm::digitalRead(ipdm::ED3));
-
-		static uint8_t counter = 0;
-		counter++;
-		if(counter >= 3)
-			counter = 0;
-
-		Serial.print("Demo counter: ");
-		Serial.println(counter);
-
-		ipdm::digitalWrite(ipdm::HOUT1, counter == 0);
-		ipdm::digitalWrite(ipdm::HOUT2, counter == 1);
-		ipdm::digitalWrite(ipdm::HOUT3, counter == 2);
-
-		ipdm::digitalWrite(ipdm::HOUT4, counter == 1);
-		ipdm::digitalWrite(ipdm::HOUT5, counter == 1);
-		ipdm::digitalWrite(ipdm::HOUT6, counter == 1);
-
-		ipdm::digitalWrite(ipdm::LOUT1, counter == 0);
-		ipdm::digitalWrite(ipdm::LOUT2, counter == 1);
-		ipdm::digitalWrite(ipdm::LOUT3, counter == 2);
-
-		ipdm::digitalWrite(ipdm::LOUT4, counter == 0);
-		ipdm::digitalWrite(ipdm::LOUT5, counter == 1);
-		ipdm::digitalWrite(ipdm::LOUT6, counter == 2);
+		bool power_steering_power = digitalRead(IGNITION_PIN);
+		ipdm::digitalWrite(POWER_STEERING_POWER_PIN, power_steering_power);
+		REPORT_BOOL(power_steering_power);
 	}
 }
 
 void handle_can1_frame(const CAN_FRAME &frame)
 {
-	Serial.print("can1 received frame id=0x");
-	Serial.println(frame.id, HEX);
+	/*Serial.print("can1 received frame id=0x");
+	Serial.println(frame.id, HEX);*/
 
-	/* Example:
-	if(frame.id == 0x108){
-		foobar = frame.data.bytes[0];
+	// Handling of received CAN messages
+
+	// Example: Outlander OBC
+
+	if(frame.id == 0x377){
+		/* - B0+B1 = 12V Battery voltage	(h04DC=12,45V -> 0,01V/bit)
+		- B2+B3 = 12V Supply current	(H53=8,3A -> 0,1A/bit)
+		- B4 = Temperature 1		(starts at -40degC, +1degC/bit)
+		- B5 = Temperature 2		(starts at -40degC, +1degC/bit)
+		- B6 = Temperature 3		(starts at -40degC, +1degC/bit)
+		- B7 = Statusbyte		(h20=standby, h21=error, h22=in operation)
+		-  - bit0(LSB) = Error
+		-  - bit1	= In Operation
+		-  - bit3      =
+		-  - bit4      =
+		-  - bit5      = Ready
+		-  - bit6	=
+		-  - bit7(MSB) = */
+		params.obc_battery_12v_voltage.set(word(frame.data.bytes[0], frame.data.bytes[1]));
+		params.obc_dcdc_status.set(frame.data.bytes[7]);
 		return;
-	}*/
+	}
+	if(frame.id == 0x389){
+		modules.obc.timeout_reset();
+		/* - B0 = Battery Voltage (as seen by the charger), needs to be scaled x
+		 * 2, so can represent up to 255*2V; used to monitor battery during
+		 * charge
+		 - B1 = Charger supply voltage, no scaling needed
+		 - B6 = Charger Supply Current x 10 */
+		params.obc_battery_voltage.set((uint16_t)frame.data.bytes[0] * 2);
+		params.obc_supply_voltage.set(frame.data.bytes[1]);
+		params.obc_supply_current.set(frame.data.bytes[6]);
+		return;
+	}
+	if(frame.id == 0x38a){
+		/* - B0 = temp x 2?
+		- B1 = temp x 2?
+		- B3 = EVSE Control Duty Cycle (granny cable ~26 = 26%) */
+		params.obc_evse_pwm.set(frame.data.bytes[3]);
+		return;
+	}
+
+	// Example: Outlander CAN-controlled heater
+
+	if(frame.id == 0x398){
+		modules.heater.timeout_reset();
+		params.heater_heating.set((frame.data.bytes[5] > 0));
+		params.heater_hv_present.set((frame.data.bytes[6] != 0x09));
+		int16_t temp1 = (int16_t)frame.data.bytes[3] - 40;
+		int16_t temp2 = (int16_t)frame.data.bytes[4] - 40;
+		params.heater_temperature.set(ipdm::limit_int16(temp1 > temp2 ? temp1 : temp2, -127, 126));
+		return;
+	}
+	if(frame.id == 0x630){
+		return;
+	}
+	if(frame.id == 0x62d){
+		return;
+	}
+	if(frame.id == 0x6bd){
+		return;
+	}
 }
 
 void handle_can2_frame(const CAN_FRAME &frame)
 {
-	Serial.print("can2 received frame id=0x");
-	Serial.println(frame.id, HEX);
+	/*Serial.print("can2 received frame id=0x");
+	Serial.println(frame.id, HEX);*/
+
+	// Handling of received CAN messages
+
+	if(frame.id == 0x123){
+		modules.obc.timeout_reset();
+		params.example_module_foobar.set(frame.data.bytes[0]);
+		return;
+	}
 }
