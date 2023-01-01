@@ -25,10 +25,12 @@ Bootloader:
 Uploading program:
 - Select Arduino Uno as the board in Arduino.
 - Cut your most hated USB cable in half and connect it to the 56-pin connector pins (according to the iPDM56 connector pinout):
-	- 10: USB 5V
-	- 12: USB D-
-	- 14: USB D+
-	- 16: USB GND
+	- 10: USB 5V  (red)
+	- 12: USB D-  (white)
+	- 14: USB D+  (green)
+	- 16: USB GND (black)
+	* See /doc/flashing/iPDM56_v1.0_flashing_060.jpg
+	  (altough of course you probably want to crimp it to the actual connector)
 
 
 iPDM56 v1.0 application design notes
