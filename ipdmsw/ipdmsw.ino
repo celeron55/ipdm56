@@ -21,8 +21,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "src/ipdm_can.h"
 #include "src/params.h"
 
+// Inputs
 constexpr int IGNITION_PIN = 7;
-constexpr int POWER_STEERING_POWER_PIN = ipdm::HOUT2;
+
+// Outputs
+constexpr int UNUSED_LOUT1                = ipdm::LOUT1;
+constexpr int UNUSED_LOUT2                = ipdm::LOUT2;
+constexpr int UNUSED_LOUT3                = ipdm::LOUT3;
+constexpr int UNUSED_LOUT4                = ipdm::LOUT4;
+constexpr int UNUSED_LOUT5                = ipdm::LOUT5;
+constexpr int UNUSED_LOUT6                = ipdm::LOUT6;
+constexpr int UNUSED_HOUT1                = ipdm::HOUT1; // NOTE: Reserved for IGN OUT
+constexpr int POWER_STEERING_POWER_PIN    = ipdm::HOUT2;
+constexpr int UNUSED_HOUT3                = ipdm::HOUT3;
+constexpr int UNUSED_HOUT4                = ipdm::HOUT4;
+constexpr int UNUSED_HOUT5                = ipdm::HOUT5;
+constexpr int UNUSED_HOUT6                = ipdm::HOUT6;
+constexpr int UNUSED_AOUT1                = ipdm::AOUT1;
+constexpr int UNUSED_AOUT2                = ipdm::AOUT2;
 
 void setup()
 {
