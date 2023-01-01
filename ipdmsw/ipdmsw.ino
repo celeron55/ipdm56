@@ -37,7 +37,7 @@ constexpr int UNUSED_HOUT3                = ipdm::HOUT3;
 constexpr int UNUSED_HOUT4                = ipdm::HOUT4;
 constexpr int UNUSED_HOUT5                = ipdm::HOUT5;
 constexpr int UNUSED_HOUT6                = ipdm::HOUT6;
-constexpr int UNUSED_AOUT1                = ipdm::AOUT1;
+constexpr int BATTERY_HEATER_SIGNAL_PIN   = ipdm::AOUT1;
 constexpr int UNUSED_AOUT2                = ipdm::AOUT2;
 
 void setup()
@@ -118,6 +118,12 @@ void loop()
 		bool power_steering_power = digitalRead(IGNITION_PIN);
 		ipdm::digitalWrite(POWER_STEERING_POWER_PIN, power_steering_power);
 		REPORT_BOOL(power_steering_power);
+	}
+
+	// Example: PWM / analog output
+	EVERY_N_MILLISECONDS(1000){
+		bool do_heat_battery = true;
+		analogWrite(BATTERY_HEATER_SIGNAL_PIN, do_heat_battery ? 650 : 0);
 	}
 
 	// Do a fancy demo cycle on all outputs (except POWER_STEERING_POWER_PIN =
