@@ -123,7 +123,8 @@ void loop()
 	// Example: PWM / analog output
 	EVERY_N_MILLISECONDS(1000){
 		bool do_heat_battery = true;
-		analogWrite(BATTERY_HEATER_SIGNAL_PIN, do_heat_battery ? 650 : 0);
+		// NOTE: Output range: 0...255 maps to 14...0V on ipdmhw1.0 AOUT1,2
+		analogWrite(BATTERY_HEATER_SIGNAL_PIN, do_heat_battery ? 138 : 0);
 	}
 
 	// Do a fancy demo cycle on all outputs (except POWER_STEERING_POWER_PIN =
