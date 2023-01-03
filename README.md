@@ -49,5 +49,7 @@ the small program memory.
 
 Have fun.
 
+You can read a longer discussion in [Let's talk about the design of the iPDM56.md](Let's%20talk%20about%20the%20design%20of%20the%20iPDM56.md)
+
 - celeron55 @ 8Dromeda Productions
 
