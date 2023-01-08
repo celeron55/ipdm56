@@ -73,6 +73,6 @@ void delay(unsigned long ms);
 // This function does not return until the time has passed
 // NOTE: Outputs will be left in their current state and may consume power
 // NOTE: Returns with clock prescaler set to 0 = 16MHz
-void maximum_power_save_mode(unsigned long duration_ms);
+void power_save_delay(unsigned long duration_ms);
 
 } // namespace ipdm

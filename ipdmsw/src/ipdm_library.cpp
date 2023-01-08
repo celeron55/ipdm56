@@ -157,13 +157,13 @@ void delay(unsigned long ms)
 	::delay(ms / active_clock_divider);
 }
 
-void maximum_power_save_mode(unsigned long duration_ms)
+void power_save_delay(unsigned long duration_ms)
 {
 	unsigned long ms_counted = 0;
 
 	disable_switched_5v();
 
-	CONSOLE.println("-!- Entering maximum_power_save_mode");
+	CONSOLE.println("-!- Entering power_save_delay");
 
 	set_clock_prescaler(8);
 
@@ -179,7 +179,7 @@ void maximum_power_save_mode(unsigned long duration_ms)
 
 	enable_switched_5v();
 
-	CONSOLE.println("-!- Returning from maximum_power_save_mode");
+	CONSOLE.println("-!- Returning from power_save_delay");
 }
 
 } // namespace ipdm
