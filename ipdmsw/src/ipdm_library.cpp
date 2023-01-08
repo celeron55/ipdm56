@@ -89,6 +89,8 @@ void enable_switched_5v()
 			CONSOLE.println("-!- CAN interfaces failed to initialize. Keep in mind that"
 					"12V input is needed to power up the switched 5V rail (5Vsw).");
 		}
+	} else {
+		CONSOLE.println("-!- 5Vsw not ON due to low Vbat");
 	}
 }
 
