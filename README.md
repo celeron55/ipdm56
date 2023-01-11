@@ -1,6 +1,21 @@
 iPDM56
 ======
 
+News
+----
+2023-01-11:
+Hardware version 1.0 is being tested by me (in two vehicles) and by a so-far
+anonymous party (in something he comes up with).
+
+In the next few weeks I expect to design version 1.1 with bugs fixed, a few
+more outputs crammed in and the design tweaked somewhat. Those will be
+documented in this repo, and put on sale on my Etsy shop at:
+https://www.etsy.com/fi-en/shop/EVresources/edit?ref=seller-platform-mcnav
+
+2022-12-09:
+Hardware version 1.0 was designed and an initial batch of 5 was made.
+
+
 The hardware
 ------------
 Please check the README.md of your chosen hardware version in its subdirectory.
