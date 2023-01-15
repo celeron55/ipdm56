@@ -3,6 +3,11 @@ iPDM56
 
 News
 ----
+2023-01-16:
+Hardware version 1.1 design was finished and boards were ordered.
+
+Check out the documentation under ipdmhw1.1/.
+
 2023-01-11:
 Hardware version 1.0 is being tested by me (in two vehicles) and by a so-far
 anonymous party (in something he comes up with).
