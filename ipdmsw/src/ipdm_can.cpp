@@ -34,6 +34,7 @@ bool can_initialized = false;
 
 static bool can_init(MCP_CAN &can, const CanParameters &params, const char *log_title)
 {
+	DEBUG_PRINT_LOCATION(0);
 	/*CONSOLE.print(log_title);
 	CONSOLE.println(": Initializing MCP2515");*/
 
@@ -77,6 +78,7 @@ static bool can_init(MCP_CAN &can, const CanParameters &params, const char *log_
 			params.filter2_extended_id ? params.filter2_ids[3] : (params.filter2_ids[3] << 16))
 			== MCP2515_FAIL) goto filter_fail;
 
+	DEBUG_PRINT_LOCATION(0);
 	return true;
 
 filter_fail:
@@ -87,19 +89,25 @@ filter_fail:
 
 void try_can_init()
 {
+	DEBUG_PRINT_LOCATION(0);
 	can_initialized = true;
 	if(!can_init(can1, can1_params, "can1")) can_initialized = false;
 	if(!can_init(can2, can2_params, "can2")) can_initialized = false;
+	DEBUG_PRINT_LOCATION(0);
 }
 
 bool can_send(MCP_CAN &mcp_can, const CAN_FRAME &frame)
 {
+	if(!can_initialized)
+		return false;
 	return (mcp_can.sendMsgBuf(frame.id, 0, frame.length,
 			frame.data.bytes) == CAN_OK);
 }
 
 bool can_receive(MCP_CAN &mcp_can, CAN_FRAME &frame)
 {
+	if(!can_initialized)
+		return false;
 	memset(&frame, 0, sizeof frame);
 	uint8_t r = mcp_can.readMsgBuf(&frame.id, &frame.length, frame.data.bytes);
 	return (r == CAN_OK);
@@ -107,6 +115,8 @@ bool can_receive(MCP_CAN &mcp_can, CAN_FRAME &frame)
 
 void can_receive(MCP_CAN &mcp_can, void (*handle_frame)(const CAN_FRAME &frame))
 {
+	if(!can_initialized)
+		return false;
 	for(uint8_t i=0; i<10; i++){
 		CAN_FRAME frame;
 		if(!can_receive(mcp_can, frame))

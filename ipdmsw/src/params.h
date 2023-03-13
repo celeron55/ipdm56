@@ -56,8 +56,8 @@ struct Params {
 	#define MODULE_DEF(name, timeout_ms)
 	#define PARAM_DEF(module_name, name, type, default_value, report_hysteresis) \
 		struct { \
-			type value = (default_value); \
-			const type& set(const type &new_value){ \
+			volatile type value = (default_value); \
+			volatile const type& set(const type &new_value){ \
 				value = new_value; \
 				/* This could be enabled to have automatic reset on set() */ \
 				/*modules.module_name.timeout_counter = 0;*/ \

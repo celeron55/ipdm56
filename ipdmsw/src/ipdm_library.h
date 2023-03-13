@@ -25,9 +25,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 namespace ipdm
 {
 
-// NOTE: Actual resistors are (18, 10), but the TVS mixes things up
-static constexpr uint32_t ADC_FACTOR16_VBAT = ADC_FACTOR16_MV_RESISTORS(21, 10);
-
 // This should be called as first thing in the application setup()
 void setup();
 
@@ -42,11 +39,6 @@ void disable_switched_5v();
 // This allows monitoring the 5Vsw line. It may be OFF even if it's been
 // enabled, due to missing Vbat.
 bool status_switched_5v();
-
-void pinMode(int pin, uint8_t mode);
-void digitalWrite(int pin, bool state);
-bool digitalRead(int pin);
-uint16_t analogRead(int pin);
 
 // Extra powersave options
 

@@ -21,8 +21,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "src/ipdm_can.h"
 #include "src/params.h"
 
-// Inputs
-constexpr int IGNITION_PIN = 7;
+// Matrix inputs/outputs
+constexpr int UNUSED_M1          = A0; // A0 = M1
+constexpr int UNUSED_M2          = A1; // A1 = M2
+constexpr int UNUSED_M3          = A2; // A2 = M3
+constexpr int UNUSED_M4          = A3; // A3 = M4
+constexpr int UNUSED_M5          = A6; // A6 = M5
+constexpr int UNUSED_M6          =  2; // D2 = M6
+constexpr int UNUSED_M7          =  3; // D3 = M7
+constexpr int UNUSED_M8          = ipdm::ED4; // ED4 = M8
+constexpr int UNUSED_M9          = ipdm::ED5; // ED5 = M9
+constexpr int IGNITION_PIN       = ipdm::ED6; // ED6 = M10
 
 // Outputs
 constexpr int UNUSED_LOUT1                = ipdm::LOUT1;
@@ -31,7 +40,7 @@ constexpr int UNUSED_LOUT3                = ipdm::LOUT3;
 constexpr int UNUSED_LOUT4                = ipdm::LOUT4;
 constexpr int UNUSED_LOUT5                = ipdm::LOUT5;
 constexpr int UNUSED_LOUT6                = ipdm::LOUT6;
-constexpr int UNUSED_HOUT1                = ipdm::HOUT1; // NOTE: Reserved for IGN OUT
+constexpr int UNUSED_HOUT1                = ipdm::HOUT1;
 constexpr int POWER_STEERING_POWER_PIN    = ipdm::HOUT2;
 constexpr int UNUSED_HOUT3                = ipdm::HOUT3;
 constexpr int UNUSED_HOUT4                = ipdm::HOUT4;
@@ -42,11 +51,11 @@ constexpr int UNUSED_AOUT2                = ipdm::AOUT2;
 
 void setup()
 {
+	Serial.begin(115200);
+
 	ipdm::setup();
 
 	pinMode(IGNITION_PIN, INPUT);
-
-	Serial.begin(115200);
 
 	// The MCP2515 CAN controllers will be initialized with these speeds and
 	// filters when the 5Vsw rail is powered up using ipdm::enable_switched_5v()
@@ -73,7 +82,9 @@ void loop()
 	}
 
 	// Consider D7 (IN10) to be the ignition pin and switch 5Vsw according to it
-	if(digitalRead(IGNITION_PIN)){
+	//if(digitalRead(IGNITION_PIN)){
+	// Always enable switched 5V for testing CANbus
+	if(true){
 		ipdm::enable_switched_5v();
 	} else {
 		ipdm::disable_switched_5v();
@@ -225,10 +236,23 @@ void handle_can1_frame(const CAN_FRAME &frame)
 	}
 }
 
+static void print_frame(const CAN_FRAME &frame)
+{
+	Serial.print("id=0x");
+	Serial.print(frame.id, HEX);
+	for(uint8_t i=0; i<8; i++){
+		Serial.print(" 0x");
+		Serial.print(frame.data.bytes[i], HEX);
+	}
+}
+
 void handle_can2_frame(const CAN_FRAME &frame)
 {
-	/*Serial.print("can2 received frame id=0x");
-	Serial.println(frame.id, HEX);*/
+#if 1
+	Serial.print("can2 received frame ");
+	print_frame(frame);
+	Serial.println();
+#endif
 
 	// Handling of received CAN messages
 

@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #pragma once
-#include "ipdm_io.h"
+#include "ipdm_io.h" // CONSOLE
 #include <Wire.h>
 
 namespace ipdm
@@ -49,17 +49,16 @@ struct IpdmPca9539
 
 	IpdmPca9539(uint8_t addr): addr(addr)
 	{
-		Wire.begin();
 		out16 = 0;
 	}
 
 	void pinMode(uint8_t pin, uint8_t mode)
 	{
-		/*CONSOLE.print("IpdmPca9539::pinMode(pin=");
+		/*CONSOLE.print(F("IpdmPca9539::pinMode(pin="));
 		CONSOLE.print(pin);
-		CONSOLE.print(", mode=");
+		CONSOLE.print(F(", mode="));
 		CONSOLE.print(mode);
-		CONSOLE.println(")");*/
+		CONSOLE.println(F(")"));*/
 
 		if(pin >= 16)
 			return;
@@ -75,11 +74,11 @@ struct IpdmPca9539
 
 	void digitalWrite(uint8_t pin, bool state)
 	{
-		/*CONSOLE.print("IpdmPca9539::digitalWrite(pin=");
+		/*CONSOLE.print(F("IpdmPca9539::digitalWrite(pin="));
 		CONSOLE.print(pin);
-		CONSOLE.print(", state=");
+		CONSOLE.print(F(", state="));
 		CONSOLE.print(state);
-		CONSOLE.println(")");*/
+		CONSOLE.println(F(")"));*/
 
 		if(pin >= 16)
 			return;
@@ -127,7 +126,7 @@ struct IpdmPca9539
 		Wire.write(value);
 		uint8_t r = Wire.endTransmission();
 		if(r){
-			CONSOLE.print("WARNING: IpdmPca9539: set_value(): Wire.endTransmission returned ");
+			CONSOLE.print(F("WARNING: IpdmPca9539: set_value(): Wire.endTransmission returned "));
 			CONSOLE.println(r);
 		}
 	}
@@ -138,13 +137,13 @@ struct IpdmPca9539
 		Wire.write(reg);
 		uint8_t r = Wire.endTransmission();
 		if(r){
-			CONSOLE.print("WARNING: IpdmPca9539: get_value(): Wire.endTransmission returned ");
+			CONSOLE.print(F("WARNING: IpdmPca9539: get_value(): Wire.endTransmission returned "));
 			CONSOLE.println(r);
 			return 0;
 		}
 		// TODO: Change to Wire.requestFrom(addr, (uint8_t)1)
 		if(Wire.requestFrom((int)addr, 1) != 1){
-			CONSOLE.println("WARNING: IpdmPca9539: get_value(): Wire.requestFrom returned !=1");
+			CONSOLE.println(F("WARNING: IpdmPca9539: get_value(): Wire.requestFrom returned !=1"));
 			return 0;
 		}
 		return Wire.read();
