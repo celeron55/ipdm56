@@ -67,4 +67,9 @@ void delay(unsigned long ms);
 // NOTE: Returns with clock prescaler set to 0 = 16MHz
 void power_save_delay(unsigned long duration_ms);
 
+// These are called automatically by setup() and loop() respectively, but if you
+// need to, you can call them separately.
+void enable_watchdog();
+void reset_watchdog();
+
 } // namespace ipdm

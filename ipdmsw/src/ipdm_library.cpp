@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ipdm_can.h"
 #include "ipdm_pca9539.hpp"
 #include "params.h"
+#include <avr/wdt.h>
 
 namespace ipdm
 {
@@ -32,10 +33,13 @@ static constexpr uint16_t MIN_VBAT_MV_FOR_5VSW = 7000;
 void setup()
 {
 	ipdm::io_begin();
+	enable_watchdog();
 }
 
 void loop()
 {
+	reset_watchdog();
+
 	EVERY_N_MILLISECONDS(100){
 		bool switched_5v_ok_was = switched_5v_ok;
 		switched_5v_ok = (analogRead_mV_factor16(VBAT_PIN, ADC_FACTOR16_VBAT) >= MIN_VBAT_MV_FOR_5VSW && digitalRead(ACTIVATE_5VSW_PIN));
@@ -146,6 +150,18 @@ void power_save_delay(unsigned long duration_ms)
 	enable_switched_5v();
 
 	CONSOLE.println("-!- Returning from power_save_delay");
+}
+
+void enable_watchdog()
+{
+	wdt_disable();
+	delay(3000);
+	wdt_enable(WDTO_2S);
+}
+
+void reset_watchdog()
+{
+	wdt_reset();
 }
 
 } // namespace ipdm
