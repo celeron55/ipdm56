@@ -82,7 +82,7 @@ void loop()
 	}
 
 	// Consider D7 (IN10) to be the ignition pin and switch 5Vsw according to it
-	//if(digitalRead(IGNITION_PIN)){
+	//if(ipdm::digitalRead(IGNITION_PIN)){
 	// Always enable switched 5V for testing CANbus
 	if(true){
 		ipdm::enable_switched_5v();
@@ -112,10 +112,10 @@ void loop()
 
 	// Print out input changes using a helper macro
 	EVERY_N_MILLISECONDS(100){
-		REPORT_BOOL(digitalRead(2));
-		REPORT_BOOL(digitalRead(3));
-		REPORT_BOOL(digitalRead(4));
-		REPORT_BOOL(digitalRead(IGNITION_PIN));
+		REPORT_BOOL(ipdm::digitalRead(2));
+		REPORT_BOOL(ipdm::digitalRead(3));
+		REPORT_BOOL(ipdm::digitalRead(4));
+		REPORT_BOOL(ipdm::digitalRead(IGNITION_PIN));
 		REPORT_UINT16_HYS(analogRead(A0), 50);
 		REPORT_UINT16_HYS(analogRead(A1), 50);
 		REPORT_UINT16_HYS(analogRead(A2), 50);
