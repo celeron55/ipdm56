@@ -14,7 +14,7 @@ There are 2 bugs on the v1.0 board. This is what you need to do to get it workin
 Additionally the support library requires this change for its proper function:
 - Connect Vbat to A7
     * This is easiest done by connecting Vbat to IN6 using a wire jumper or a 0...10 Ohm resistor.
-    * The library uses this to determine whether 5Vsw is available and it will not initialize the CAN controllers until it sees voltage at the A7 pin.
+    * The library uses this to determine whether 5Vsw is available and it will not initialize the CAN controllers until it sees voltage at the A7 pin. This check exists for the case where the MCU may be running while 5Vsw not being available when the board is being powered via USB without 12V being applied to Vbat.
     * With this change, IN6 is obviously unavailable for its normal A7 input function.
 
 
