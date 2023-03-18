@@ -55,7 +55,7 @@ void setup()
 
 	ipdm::setup();
 
-	pinMode(IGNITION_PIN, INPUT);
+	ipdm::pinMode(IGNITION_PIN, INPUT);
 
 	// The MCP2515 CAN controllers will be initialized with these speeds and
 	// filters when the 5Vsw rail is powered up using ipdm::enable_switched_5v()
