@@ -11,6 +11,7 @@ hairy mess with insane design choices.
 
 - celeron55
 
+
 Usage
 -----
 
@@ -21,4 +22,11 @@ Configure your iPDM56 version in `ipdm_version.h` to get correct pin mappings.
 
 Edit the .ino file, `param_def.h` and others to make it do what you wish it to
 do.
+
+
+Common mistakes
+---------------
+
+Remember to always use `ipdm::digitalRead`, `ipdm::digitalWrite` and `ipdm::pinMode` instead of `digitalRead`, `digitalWrite` and `pinMode`, as the latter don't support the I/O extender pins.
+* Not doing this is a super common mistake for myself too! -celeron55
 
