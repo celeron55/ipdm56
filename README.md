@@ -3,6 +3,15 @@ iPDM56
 
 News
 ----
+2023-04-07:
+A small issue with the boards was diagnosed. The bug was documented and the
+basics were tested.
+
+I'm currently unable to find the time to bench test all of the v1.1 features,
+but I am running two v1.0 boards in my own vehicle.
+
+v1.1 boards are currently being sent to early testers.
+
 2023-01-16:
 Hardware version 1.1 design was finished and boards were ordered.
 
