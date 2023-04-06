@@ -25,7 +25,7 @@ Bootloader:
 - Install Arduino.
 - Select Arduino Uno as the board in Arduino.
 - Connect an ISP programmer like USBasp to the ISP header. GND is closer to board edge.
-- Select the ISP prorammer in Arduino's Tools menu.
+- Select the ISP programmer in Arduino's Tools menu.
 - Use Arduino's "Burn bootloader" option in the Tools menu.
 
 Uploading program:
