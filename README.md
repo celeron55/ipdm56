@@ -204,4 +204,6 @@ Example uses
 - Translating CAN messages
 	- e.g. Translate incompatible traction control messages between an ABS unit and a VCU
 
+- Implementing CAN and 12V I/O based protocols
+	- e.g. Chademo fast charging
 
