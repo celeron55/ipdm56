@@ -43,9 +43,10 @@ The product
 -----------
 The iPDM56 is an intelligent power distribution module. It's basically an
 atmega32-based arduino with 6x low-side and 6x high-side 3A PPTC protected
-MOSFET outputs. The inputs are protected by resistors and TVSes and filtered by
-capacitors. They are configurable using a soldering iron (to make resistor
-dividers, pull-ups, filters, and to repurpose them as logic level outputs).
+MOSFET outputs (that's v1.0; v1.1 has more). The inputs are protected by
+resistors and TVSes and filtered by capacitors. They are configurable using a
+soldering iron (to make resistor dividers, pull-ups, filters, and to repurpose
+them as logic level outputs).
 
 An I/O expander IC is used to get all the outputs out of the small MCU. It has
 2x MCP2515 CAN controllers to either work with 2 buses or alternatively they can
