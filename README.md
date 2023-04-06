@@ -69,7 +69,7 @@ on this and this arbitrary logic without the ignition key" system.
 It's intended to act as programmable logic and output driver for pumps, fans,
 brake vacuum boosters and whatever.
 
-It' intended to act as the fuse box and relay box for your inverter, charger and
+It's intended to act as the fuse box and relay box for your inverter, charger and
 other module's 12V power inputs.
 
 And if you have a simple enough system where you don't need a more complex VCU
@@ -110,7 +110,7 @@ The specific enclosure has also been chosen in this way. It's super useful for t
 
 Of course the entire project has been also chosen in this way too. I realized you can easily shorten the time needed to make an EV conversion or some other similar-ish project by replacing the time spent arranging and re-arranging fuses, relays and outputs, and cursing the lack of outputs and inputs, with just adding a stupid box and then thinking in software. You can shorten it probably by days, and every year you save more days as you don't need to rip apart the system to make some logic change due to whatever you happened to add or realize.
 
-But I also realized it's not THAT simple. You can't do everything in software. That's why it has those terminals on-board so that it can be modified for specific i/o requirements. In DIY, you always end up with project specific I/O requirements.
+But I also realized it's not THAT simple. You can't do everything in software. That's why it has those terminals on-board so that it can be modified for specific I/O requirements. In DIY, you always end up with project specific I/O requirements.
 
 But what terminals? What modifications to make possible? How the modifications are supposed to be made? For what purpose? What are the purposes that will not be supported?
 
@@ -146,7 +146,7 @@ Software/firmware
 
 When you store software as source code, it has to be compiled before use. You could store compiled binaries, but then you couldn't modify them, and you are very likely to want to modify the behavior during the vehicle's lifetime. That's why you are using the iPDM56, to let you modify the operating logic without touching the wiring or replacing components.
 
-The software stack has to be such that you can get the tools for your 4rd laptop into the future, and they just work. That's why the iPDM56 is set up exactly like a Chinese Arduino Uno clone, when it comes to programming. All it has for extra is the CAN controllers and an I/O expander chip.
+The software stack has to be such that you can get the tools for your 4th laptop into the future, and they just work. That's why the iPDM56 is set up exactly like a Chinese Arduino Uno clone, when it comes to programming. All it has for extra is the CAN controllers and an I/O expander chip.
 
 The software that is provided by me for use with the iPDM56 comes with all the necessary libraries in the src subdirectory, so that your project can be built on any fresh Arduino install, without the need to set up anything at all.
 
