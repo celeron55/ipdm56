@@ -26,7 +26,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 struct Modules {
 	#define MODULE_DEF(name, timeout_ms) \
 		struct { \
-			uint8_t timeout_counter = 255; /* incremented at 100ms interval, 255=dead */ \
+			uint8_t timeout_counter = 254; /* incremented at 100ms interval, 255=dead */ \
 			void timeout_reset(){ \
 				timeout_counter = 0; \
 			} \
