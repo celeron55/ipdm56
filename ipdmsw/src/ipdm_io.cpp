@@ -102,12 +102,12 @@ void io_begin()
 	// Set LOUT1...LOUT6, HOUT5...HOUT10 as outputs
 	for(int pin=ED12; pin<=ED23; pin++){
 		pinMode(pin, OUTPUT);
-		//digitalWrite(pin, LOW);
+		digitalWrite(pin, LOW);
 	}
 	// Set HOUT1...HOUT4 as outputs
 	for(int pin=ED28; pin<=ED31; pin++){
 		pinMode(pin, OUTPUT);
-		//digitalWrite(pin, LOW);
+		digitalWrite(pin, LOW);
 	}
 #else // IPDM_VERSION
 static_assert(false, "Unsupported IPDM_VERSION");
