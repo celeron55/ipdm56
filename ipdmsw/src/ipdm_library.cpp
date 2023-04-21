@@ -129,27 +129,41 @@ void delay(unsigned long ms)
 
 void power_save_delay(unsigned long duration_ms)
 {
-	unsigned long ms_counted = 0;
-
 	disable_switched_5v();
 
-	CONSOLE.println("-!- Entering power_save_delay");
+	// FIXME: For some reason the delay ends up actually being about a fourth of
+	// the specified delay, so just multiply it here for now...
+	duration_ms *= 4;
+
+	bool long_delay = false;
+	if(duration_ms >= 100){
+		CONSOLE.println("-!- Entering power_save_delay");
+		// Let the console message be printed at current clock speed
+		delay(10);
+		duration_ms -= 10;
+		long_delay = true;
+	}
 
 	set_clock_prescaler(8);
 
 	for(;;){
 		loop();
-		if(ms_counted >= duration_ms)
+		if(duration_ms >= 100){
+			delay(100);
+			duration_ms -= 100;
+		} else {
+			delay(duration_ms);
 			break;
-		delay(100);
-		ms_counted += 100;
+		}
 	}
 
 	set_clock_prescaler(0);
 
 	enable_switched_5v();
 
-	CONSOLE.println("-!- Returning from power_save_delay");
+	if(long_delay){
+		CONSOLE.println("-!- Returning from power_save_delay");
+	}
 }
 
 void enable_watchdog()
