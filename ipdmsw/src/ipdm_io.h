@@ -141,7 +141,7 @@ constexpr int LPWM3 = 9;
 constexpr int LPWM4 = 10;
 
 // Inputs
-constexpr int VUSB_PIN       =  ED3; 
+constexpr int VUSB_PIN       =  ED7;
 constexpr int LOUT1_MONITOR  = ED26; 
 constexpr int LOUT2_MONITOR  = ED27; 
 constexpr int HOUT1_MONITOR  = ED24; 

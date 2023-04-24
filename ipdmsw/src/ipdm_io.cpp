@@ -109,6 +109,7 @@ void io_begin()
 		pinMode(pin, OUTPUT);
 		digitalWrite(pin, LOW);
 	}
+	pinMode(VUSB_PIN, INPUT);
 #else // IPDM_VERSION
 static_assert(false, "Unsupported IPDM_VERSION");
 #endif
