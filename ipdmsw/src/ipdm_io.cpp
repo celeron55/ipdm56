@@ -92,7 +92,18 @@ void io_begin()
 	// hardware detection uses the i2c pins as analog pins
 	Wire.begin();
 
-#if IPDM_VERSION == 100
+#ifdef IPDM_SKIP_IO_EXTENDER_OUTPUT_INITIALIZATION
+	// I/O extender output initialization is skipped here.
+
+	// You can enable this behavior by adding into your ipdm_version.h:
+	// #define IPDM_SKIP_IO_EXTENDER_OUTPUT_INITIALIZATION
+
+	// This is useful in special cases where you want the outputs to be left in
+	// their previous state after rebooting the AVR until your code is reached.
+
+	// What follows are the normal if branches for the different ipdmhw versions
+	// in the normal case where we want to initialize the i/o extender outputs.
+#elif IPDM_VERSION == 100
 	// Set LOUT1...LOUT6, HOUT1...HOUT6 as outputs
 	for(int pin=ED4; pin<=ED15; pin++){
 		pinMode(pin, OUTPUT);
