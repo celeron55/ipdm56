@@ -64,6 +64,7 @@ void delay(unsigned long ms);
 
 // This function does not return until the time has passed
 // NOTE: Outputs will be left in their current state and may consume power
+// NOTE: CAN controllers will be shut down for the duration of the delay
 // NOTE: Returns with clock prescaler set to 0 = 16MHz
 void power_save_delay(unsigned long duration_ms);
 
