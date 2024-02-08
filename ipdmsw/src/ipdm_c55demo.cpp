@@ -144,7 +144,7 @@ void C55demoAlgorithm::permit_charge()
 
 	output.charging_enable = true;
 
-	permit_charge_timestamp = millis();
+	permit_charge_timestamp = longtime();
 
 	c55demo_state = CS_PERMITTING_CHARGE;
 }
@@ -156,9 +156,9 @@ void C55demoAlgorithm::close_contactor_and_start_charging()
 	output.close_c55demo_contactor = true;
 	vehicle_status.status &= ~VEHICLE_STATUS_CONTACTOR_OPEN;
 
-	contactor_close_timestamp = millis();
-	charger_last_correct_voltage_timestamp = millis();
-	bms_last_correct_voltage_timestamp = millis();
+	contactor_close_timestamp = longtime();
+	charger_last_correct_voltage_timestamp = longtime();
+	bms_last_correct_voltage_timestamp = longtime();
 
 	c55demo_state = CS_WAITING_CHARGER_TO_START_CHARGING;
 }
@@ -168,7 +168,7 @@ void C55demoAlgorithm::stop_charging_nicely()
 	log_println_f("stop_charging_nicely()");
 
 	c55demo_state = CS_REQUESTING_STOP_NICELY;
-	requesting_stop_timestamp = millis();
+	requesting_stop_timestamp = longtime();
 }
 
 void C55demoAlgorithm::stop_charging()
@@ -179,7 +179,7 @@ void C55demoAlgorithm::stop_charging()
 	vehicle_status.status &= ~VEHICLE_STATUS_CHARGE_ENABLED;
 
 	c55demo_state = CS_REQUESTING_STOP;
-	requesting_stop_timestamp = millis();
+	requesting_stop_timestamp = longtime();
 }
 
 void C55demoAlgorithm::open_contactor_and_start_waiting_for_connector_unlock()
@@ -235,7 +235,7 @@ void C55demoAlgorithm::update(const C55demoInput &input)
 				log_println_f("d1 (seq1) activation detected");
 
 				c55demo_state = CS_WAITING_PARAMETERS;
-				c55demo_start_timestamp = millis();
+				c55demo_start_timestamp = longtime();
 				break;
 			}
 		}
@@ -301,7 +301,7 @@ void C55demoAlgorithm::update(const C55demoInput &input)
 		}
 	} break;
 	case CS_PERMITTING_CHARGE: {
-		if(millis() - permit_charge_timestamp >= 500){
+		if(longtime() - permit_charge_timestamp >= 500){
 			// IEEE 2030.1.1 A.6: Vehicle charging enabled flag is set 0.0...1.0s
 			// after the vehicle charge permission line is activated
 			vehicle_status.status |= VEHICLE_STATUS_CHARGE_ENABLED;
@@ -376,8 +376,8 @@ void C55demoAlgorithm::update(const C55demoInput &input)
 
 		// Adjust current request at interval (spec allows 20A/s)
 		{
-			if(millis() - current_request_adjusted_timestamp > 300){
-				current_request_adjusted_timestamp = millis();
+			if(longtime() - current_request_adjusted_timestamp > 300){
+				current_request_adjusted_timestamp = longtime();
 
 				uint8_t max_current_request = input.bms_max_charge_current_A;
 
@@ -422,7 +422,7 @@ void C55demoAlgorithm::update(const C55demoInput &input)
 				// NOTE: 10V deviation specified by IEEE 2030.1.1 table A.22
 				if(labs((int16_t)measured_voltage -
 						(int16_t)charger_status.present_output_voltage) <= 10){
-					charger_last_correct_voltage_timestamp = millis();
+					charger_last_correct_voltage_timestamp = longtime();
 				}
 				if(ipdm::timestamp_age(charger_last_correct_voltage_timestamp) > 5000){
 					log_println_f("Charger correct voltage timeout");
@@ -431,7 +431,7 @@ void C55demoAlgorithm::update(const C55demoInput &input)
 				// OBC to BMS
 				// bms_pack_voltage_V updates too slowly for direct feedback
 				if(labs((int16_t)measured_voltage - input.bms_pack_voltage_V) < 5){
-					bms_last_correct_voltage_timestamp = millis();
+					bms_last_correct_voltage_timestamp = longtime();
 				}
 				if(ipdm::timestamp_age(bms_last_correct_voltage_timestamp) > 5000){
 					log_println_f("BMS correct voltage timeout");
@@ -441,7 +441,7 @@ void C55demoAlgorithm::update(const C55demoInput &input)
 		}
 	} break;
 	case CS_REQUESTING_STOP_NICELY: {
-		if(millis() - requesting_stop_timestamp > REQUESTING_STOP_NICELY_TIMEOUT_MS){
+		if(longtime() - requesting_stop_timestamp > REQUESTING_STOP_NICELY_TIMEOUT_MS){
 			log_println_f("Timed out requesting stop nicely. Requesting not nicely");
 			stop_charging();
 		}
@@ -459,17 +459,17 @@ void C55demoAlgorithm::update(const C55demoInput &input)
 		}
 	} break;
 	case CS_REQUESTING_STOP: {
-		if(millis() - requesting_stop_timestamp > 1750){
+		if(longtime() - requesting_stop_timestamp > 1750){
 			// IEEE 2030.1.1 A.6: Charge permission deactivates after 1.5...2.0s
 			// measured from CANbus charging stop flag
 			output.charging_enable = false;
 
 			c55demo_state = CS_REQUESTING_STOP_PHASE2;
-			requesting_stop_timestamp = millis();
+			requesting_stop_timestamp = longtime();
 		}
 	} break;
 	case CS_REQUESTING_STOP_PHASE2: {
-		if(millis() - requesting_stop_timestamp > REQUESTING_STOP_OPEN_CONTACTOR_TIMEOUT_MS){
+		if(longtime() - requesting_stop_timestamp > REQUESTING_STOP_OPEN_CONTACTOR_TIMEOUT_MS){
 			log_println_f("Timed out requesting stop. Opening contactor");
 			open_contactor_and_start_waiting_for_connector_unlock();
 			vehicle_status.status |= VEHICLE_STATUS_FAULT;
@@ -505,7 +505,7 @@ void C55demoAlgorithm::update(const C55demoInput &input)
 void C55demoAlgorithm::handle_can_frame(uint16_t id, uint8_t bytes[8])
 {
 	if(id == 0x108){
-		last_received_from_c55demo_timestamp = millis();
+		last_received_from_c55demo_timestamp = longtime();
 
 		charger_status.supports_contactor_welding_detection = bytes[0];
 		charger_status.available_voltage = bytes[1] | (bytes[2] << 8);
@@ -515,7 +515,7 @@ void C55demoAlgorithm::handle_can_frame(uint16_t id, uint8_t bytes[8])
 		return;
 	}
 	if(id == 0x109){
-		last_received_from_c55demo_timestamp = millis();
+		last_received_from_c55demo_timestamp = longtime();
 
 		charger_status.c55demo_version = bytes[0];
 		charger_status.present_output_voltage = bytes[1] | (bytes[2] << 8);

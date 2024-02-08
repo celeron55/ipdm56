@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // user application's definitions in param_def.h
 
 #pragma once
+#include "ipdm_time.h"
 #include <stdint.h>
 #include <Stream.h>
 
@@ -71,6 +72,7 @@ struct Params {
 				return modules.module_name.timeout_counter != 255; \
 			} \
 			void report_value(Stream &stream){ \
+				::ipdm::util_print_timestamp(stream); \
 				stream.print(F("-!- " #module_name "_" #name " = ")); \
 				stream.println(value); \
 			} \

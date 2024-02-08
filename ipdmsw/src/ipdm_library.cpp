@@ -38,6 +38,8 @@ void setup()
 
 void loop()
 {
+	ipdm::time_loop();
+
 	reset_watchdog();
 
 	EVERY_N_MILLISECONDS(100){
