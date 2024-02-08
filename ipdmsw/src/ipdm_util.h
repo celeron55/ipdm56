@@ -205,7 +205,7 @@ namespace ipdm
 			for(uint16_t i=0; i<num_bits; i++){\
 				if(var & bit(i)){\
 					CONSOLE.print(names[i]);\
-					CONSOLE.print(" ");\
+					CONSOLE.print(F(" "));\
 				}\
 			}\
 			CONSOLE.println();\

@@ -35,18 +35,18 @@ bool can_initialized = false;
 static bool can_init(MCP_CAN &can, const CanParameters &params, const char *log_title)
 {
 	/*CONSOLE.print(log_title);
-	CONSOLE.println(": Initializing MCP2515");*/
+	CONSOLE.println(F(": Initializing MCP2515"));*/
 
 	for(uint8_t i=0; i<10; i++){
 		if(can.begin(MCP_STDEXT, can1_params.speed, MCP_8MHZ) == CAN_OK){
 			/*CONSOLE.print(log_title);
-			CONSOLE.println(": MCP2515 init ok");*/
+			CONSOLE.println(F(": MCP2515 init ok"));*/
 			// Allow messages to be transmitted
 			can.setMode(MCP_NORMAL);
 			break;
 		} else {
 			CONSOLE.print(log_title);
-			CONSOLE.println(": MCP2515 init failed");
+			CONSOLE.println(F(": MCP2515 init failed"));
 		}
 		delay(100);
 	}
@@ -81,7 +81,7 @@ static bool can_init(MCP_CAN &can, const CanParameters &params, const char *log_
 
 filter_fail:
 	CONSOLE.print(log_title);
-	CONSOLE.println(": FAILED to set MCP2515 filters");
+	CONSOLE.println(F(": FAILED to set MCP2515 filters"));
 	return false;
 }
 

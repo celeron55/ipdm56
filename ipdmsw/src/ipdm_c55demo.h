@@ -113,9 +113,9 @@ void loop()
 
 		// The charger's voltage and current are available in:
 		Serial.print(c55demo.charger_status.present_output_voltage);
-		Serial.print("V ");
+		Serial.print(F("V "));
 		Serial.print(c55demo.charger_status.present_charging_current);
-		Serial.println("A");
+		Serial.println(F("A"));
 
 		// Other useful values can be found in:
 		c55demo.vehicle_status.status;

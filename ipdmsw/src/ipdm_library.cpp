@@ -51,7 +51,7 @@ void loop()
 		if(switched_5v_ok && !can_initialized){
 			try_can_init();
 			if(can_initialized){
-				CONSOLE.println("-!- 5Vsw ok; CAN initialized");
+				CONSOLE.println(F("-!- 5Vsw ok; CAN initialized"));
 			}
 		}
 		if(!switched_5v_ok){
@@ -81,7 +81,7 @@ void enable_switched_5v()
 	if(analogRead_mV_factor16(VBAT_PIN, ADC_FACTOR16_VBAT) >= MIN_VBAT_MV_FOR_5VSW){
 		switched_5v_ok = true;
 
-		CONSOLE.println("-!- 5Vsw ON");
+		CONSOLE.println(F("-!- 5Vsw ON"));
 
 		try_can_init();
 
@@ -90,7 +90,7 @@ void enable_switched_5v()
 					" 12V input is needed to power up the switched 5V rail (5Vsw).");
 		}
 	} else {
-		CONSOLE.println("-!- 5Vsw not ON due to low Vbat");
+		CONSOLE.println(F("-!- 5Vsw not ON due to low Vbat"));
 	}
 }
 
@@ -99,7 +99,7 @@ void disable_switched_5v()
 	if(!digitalRead(ACTIVATE_5VSW_PIN))
 		return;
 
-	CONSOLE.println("-!- 5Vsw OFF");
+	CONSOLE.println(F("-!- 5Vsw OFF"));
 
 	digitalWrite(ACTIVATE_5VSW_PIN, LOW);
 
@@ -139,7 +139,7 @@ void power_save_delay(unsigned long duration_ms)
 
 	bool long_delay = false;
 	if(duration_ms >= 100){
-		CONSOLE.println("-!- Entering power_save_delay");
+		CONSOLE.println(F("-!- Entering power_save_delay"));
 		// Let the console message be printed at current clock speed
 		delay(10);
 		duration_ms -= 10;
@@ -164,7 +164,7 @@ void power_save_delay(unsigned long duration_ms)
 	enable_switched_5v();
 
 	if(long_delay){
-		CONSOLE.println("-!- Returning from power_save_delay");
+		CONSOLE.println(F("-!- Returning from power_save_delay"));
 	}
 }
 
