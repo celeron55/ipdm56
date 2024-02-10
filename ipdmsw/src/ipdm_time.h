@@ -30,6 +30,14 @@ namespace ipdm
 // functions. If you do still call it, you need to take special care. See the
 // implementation of longtime() to get an idea what you have to deal with.
 
+// You can do "using namespace ipdm::avoid_using_millis" to disable millis() at
+// compile time.
+namespace avoid_using_millis {
+	// Calling this as a function won't work, which is the goal. You will get a
+	// weird error. And that's the entire point.
+	constexpr char *millis = "You wanted to avoid using millis(), there you go";
+}
+
 // Returns millisecond counter value
 // Use this instead of Arduino's millis().
 // NOTE: Every function in this file is designed to deal with timestamps
