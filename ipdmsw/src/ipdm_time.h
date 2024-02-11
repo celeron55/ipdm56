@@ -22,29 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 namespace ipdm
 {
 
-// Longtime is the ipdm-specific timing system, separate from arduino's millis()
-// counter.
-// Longtime takes into consideration the changing of system clock speed for
-// power saving.
-// NOTE: You should not use millis() if you use the ipdm56 power saving
-// functions. If you do still call it, you need to take special care. See the
-// implementation of longtime() to get an idea what you have to deal with.
-
-// You can do "using namespace ipdm::avoid_using_millis" to disable millis() at
-// compile time.
-namespace avoid_using_millis {
-	// Calling this as a function won't work, which is the goal. You will get a
-	// weird error. And that's the entire point.
-	constexpr char *millis = "You wanted to avoid using millis(), there you go";
-}
-
-// Returns millisecond counter value
-// Use this instead of Arduino's millis().
-// NOTE: Every function in this file is designed to deal with timestamps
-// returned by ipdm::longtime(), instead of millis().
-uint32_t longtime();
-
-// Parameter: timestamp: longtime() timestamp
+// Parameter: timestamp: millis() timestamp
 // NOTE: Keep in mind this value will overflow at 4294967296ms
 unsigned long timestamp_age(unsigned long timestamp);
 
@@ -55,7 +33,7 @@ static bool ENM_compare_and_update(unsigned long &t0, const unsigned long &inter
 {
 	bool trigger_now = timestamp_age(t0) >= interval;
 	if(trigger_now)
-		t0 = longtime();
+		t0 = millis();
 	return trigger_now;
 }
 
@@ -82,16 +60,14 @@ static void print_timestamp(Stream &dst, uint32_t t)
 
 static void util_print_timestamp(Stream &dst)
 {
-	print_timestamp(dst, longtime());
+	print_timestamp(dst, millis());
 }
 
-// These are mostly meant for internal operation, the user application rarely
-// should touch these
-extern uint32_t longtime_counter;
-
 // Called by ipdm::loop()
-// Updates longtime_counter in case user code doesn't call longtime()
 void time_loop();
+
+// Deprecated
+static uint32_t longtime() { return millis(); }
 
 } // namespace idpm
 
