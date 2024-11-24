@@ -11,8 +11,16 @@ iPDM56 v2.0 fixing the board
    handily found on the nearby capacitor and can be reached by adding a solder
    blob.
 
-2. If you intend to use RS232 to flash the STM32, R3001 (originally a 100k
-   resistor) has to be paralleled up with a 3.3k resistor
+2. If you intend to use RS232 to flash the STM32:
+    - You have three ALTERNATIVE fixes:
+        1. Parallel R3001 (originally a 100k resistor) with a 1.0k resistor
+            - Downside: This increases the standby drain of the board by 3 mA on
+              the 3.3V line, which corresponds to about 1 mA on the 12V supply
+        2. Desolder RA1H5V1
+            - Downside: The 5V external output pin won't provide 5V
+        3. Replace RA1H5V1 with a 330k...470k 0603x4 resistor array
+            - Downside: You need to acquire the replacement resistor array
+            - Downside: I have not tested this fix in reality (yet)
     - R3001 is a pull-up resistor for the `PERIPHERALS_ENABLE` line, and 100k is
       too high due to bad resistance choices on the Q2H5V1 NPN transistor base
       and won't let the voltage on the `PERIPHERALS_ENABLE` line rise high
