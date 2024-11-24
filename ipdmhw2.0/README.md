@@ -15,7 +15,7 @@ iPDM56 v2.0 fixing the board
     - You have three ALTERNATIVE fixes:
         1. Parallel R3001 (originally a 100k resistor) with a 1.0k resistor
             - Downside: This increases the standby drain of the board by 3 mA on
-              the 3.3V line, which corresponds to about 1 mA on the 12V supply
+              the 3.3V line, which corresponds to about 1.5 mA on the 12V supply
         2. Desolder RA1H5V1
             - Downside: The 5V external output pin won't provide 5V
         3. Replace RA1H5V1 with a 330k...470k 0603x4 resistor array
