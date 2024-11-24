@@ -13,7 +13,7 @@ iPDM56 v2.0 fixing the board
 
 2. If you intend to use RS232 to flash the STM32:
     - You have three ALTERNATIVE fixes:
-        1. Parallel R3001 (originally a 100k resistor) with a 1.0k resistor
+        1. Parallel or replace R3001 with a 1.0k resistor (originally 100k)
             - Downside: This increases the standby drain of the board by 3 mA on
               the 3.3V line, which corresponds to about 1.5 mA on the 12V supply
         2. Desolder RA1H5V1
