@@ -32,6 +32,8 @@ CanParameters can2_params;
 
 bool can_initialized = false;
 
+log_can_frame_cb_t log_can_frame_cb = nullptr;
+
 static bool can_init(MCP_CAN &can, const CanParameters &params, const char *log_title)
 {
 	/*CONSOLE.print(log_title);
@@ -96,6 +98,9 @@ bool can_send(MCP_CAN &mcp_can, const CAN_FRAME &frame)
 {
 	if(!can_initialized)
 		return false;
+	if(log_can_frame_cb){
+		log_can_frame_cb(&mcp_can == &can1 ? 1 : 2, true, frame);
+	}
 	return (mcp_can.sendMsgBuf(frame.id, 0, frame.length,
 			frame.data.bytes) == CAN_OK);
 }
@@ -106,6 +111,9 @@ bool can_receive(MCP_CAN &mcp_can, CAN_FRAME &frame)
 		return false;
 	memset(&frame, 0, sizeof frame);
 	uint8_t r = mcp_can.readMsgBuf(&frame.id, &frame.length, frame.data.bytes);
+	if(r == CAN_OK && log_can_frame_cb){
+		log_can_frame_cb(&mcp_can == &can1 ? 1 : 2, false, frame);
+	}
 	return (r == CAN_OK);
 }
 
@@ -120,6 +128,11 @@ void can_receive(MCP_CAN &mcp_can, void (*handle_frame)(const CAN_FRAME &frame))
 
 		handle_frame(frame);
 	}
+}
+
+void can_set_logger(log_can_frame_cb_t cb)
+{
+	log_can_frame_cb = cb;
 }
 
 } // namespace ipdm

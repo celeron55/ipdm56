@@ -51,6 +51,10 @@ bool can_send(MCP_CAN &mcp_can, const CAN_FRAME &frame);
 bool can_receive(MCP_CAN &mcp_can, CAN_FRAME &frame);
 void can_receive(MCP_CAN &mcp_can, void (*handle_frame)(const CAN_FRAME &frame));
 
+typedef void (*log_can_frame_cb_t)(uint8_t interface, bool is_tx, const CAN_FRAME &);
+
+void can_set_logger(log_can_frame_cb_t);
+
 // These are mostly meant for internal operation, the user application rarely
 // should touch these
 extern bool can_initialized;
