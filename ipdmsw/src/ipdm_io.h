@@ -79,7 +79,7 @@ constexpr int ED31 = 5631;
 #if IPDM_VERSION == 100
 
 // Actual resistors are (18, 10), but the TVS mixes things up on v1.0.
-constexpr uint32_t ADC_FACTOR16_VBAT = ADC_FACTOR16_MV_RESISTORS(21, 10);
+constexpr uint32_t ADC_FACTOR16_VBAT = ADC_FACTOR16_MV_RESISTORS(83, 40);
 
 // Digital outputs
 constexpr int LOUT1       =  ED4;
