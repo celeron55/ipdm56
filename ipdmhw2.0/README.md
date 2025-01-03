@@ -28,6 +28,12 @@ iPDM56 v2.0 fixing the board
       running, it will keep the line high and RS232 will work regardless of this
       fix.
 
+3. The PWMOUT1 and PWMOUT2 outputs are driven by EG3001 MOSFET gate drivers that
+   will fail if the output is loaded with anything more than a capactive load of
+   1nF or so, i.e. they are signal outputs only. If you want to use them _at
+   all_, you should replace the 200mA PPTCs with 1k 1206 resistors. This is
+   _untested_ and may or may not provide enough protection for the drivers.
+
 iPDM56 v2.0 flashing
 --------------------
 
