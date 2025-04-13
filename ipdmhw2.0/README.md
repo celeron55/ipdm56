@@ -29,10 +29,16 @@ iPDM56 v2.0 fixing the board
       fix.
 
 3. The PWMOUT1 and PWMOUT2 outputs are driven by EG3001 MOSFET gate drivers that
-   will fail if the output is loaded with anything more than a capactive load of
-   1nF or so, i.e. they are signal outputs only. If you want to use them _at
-   all_, you should replace the 200mA PPTCs with 1k 1206 resistors. This is
-   _untested_ and may or may not provide enough protection for the drivers.
+   seem quite fragile. The problem might be lack of continuous current
+   capability, or it might be the fact that there's no ESD protection in the
+   chips nor on the board. It's recommended to:
+    - Add a zener diode and a 1nF capacitor in parallel on the output as ESD protection
+    - Add a resistor in series with the output. As high of a resistance as
+      possible given the use case
+    - Report any successes and failures on GitHub or to celeron55@gmail.com
+
+4. The C7 capacitor interferes with the enclosure. Make sure to cut or grind the
+   cover so that there's room for the capacitor.
 
 iPDM56 v2.0 flashing
 --------------------
