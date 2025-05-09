@@ -342,6 +342,9 @@ mod rtic_app {
 
         let mut wakeup_output_pin = gpioa.pa15.into_push_pull_output();
 
+        let mut hout8_pin = gpiod.pd2.into_push_pull_output();
+        hout8_pin.set_high();
+
         // SysTick
 
         let systick_token = rtic_monotonics::create_systick_token!();
