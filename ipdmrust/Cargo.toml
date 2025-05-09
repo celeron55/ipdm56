@@ -1,0 +1,27 @@
+[workspace]
+members = [
+  "common",
+  "embedded",
+  "desktop",
+  "app",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+authors = ["celeron55@iki.fi"]
+version = "0.1.0"
+
+[profile.release]
+# debug = 2
+# codegen-units = 1 # better optimizations
+debug = true # symbols are nice and they don't increase the size on Flash
+# lto = true # better optimizations
+
+[profile.dev]
+# Optimize debug builds a bit so that they run fast enough
+opt-level = 0
+
+[profile.dev.package."*"]
+# Optimize dependencies in debug builds
+opt-level = 1
