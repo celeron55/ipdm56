@@ -63,6 +63,12 @@ The ROM bootloader supports these alternative flashing options:
     - Supported by e.g. dfu-util
 - RS232
     - Supported by e.g. stm32flasher
+    - The ui8d v2.0 display and telematics board can act as a convenient
+      RS232 converter with a physical reset button for the `EXT_RESET_N` line
+        - Note that currently doing this is quite flaky. I am not sure what's
+          required to get stm32flasher to be happy, but if you spam stm32flasher
+          while doing the long press `EXT_RESET_N` sequences, with any luck, it
+          will succeed within a couple of attempts.
 - CAN
     - To enable CAN flashing, bridge JP3001. This enables CAN flashing via CAN2.
 
