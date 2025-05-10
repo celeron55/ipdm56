@@ -290,10 +290,10 @@ impl HardwareInterface for HardwareImplementation {
 
     fn get_digital_input(&mut self, input: DigitalInput) -> bool {
         match input {
-            DigitalInput::Group1OC => self.group1oc_pin.is_high(),
-            DigitalInput::Group2OC => self.group2oc_pin.is_high(),
-            DigitalInput::Group3OC => self.group3oc_pin.is_high(),
-            DigitalInput::Group4OC => self.group4oc_pin.is_high(),
+            DigitalInput::Group1OC => self.group1oc_pin.is_low(),
+            DigitalInput::Group2OC => self.group2oc_pin.is_low(),
+            DigitalInput::Group3OC => self.group3oc_pin.is_low(),
+            DigitalInput::Group4OC => self.group4oc_pin.is_low(),
         }
     }
 
