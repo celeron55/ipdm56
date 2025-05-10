@@ -585,9 +585,11 @@ impl MainState {
         // TODO: Control based on ignition key state
         hw.set_digital_output(BrakeBooster, true);
 
+        // TODO: Send outlander heater control CAN messages
+
         // TODO: Update CP PWM to OBC (SPWM1)
 
-        // TODO: Send outlander heater control CAN messages
+        // TODO: Send outlander OBC control CAN messages
     }
 
     fn send_setting_frame(&mut self, hw: &mut dyn HardwareInterface,
