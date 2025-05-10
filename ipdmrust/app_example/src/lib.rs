@@ -565,7 +565,10 @@ impl MainState {
                     get_parameter(ParameterId::OutlanderHeaterT).value > 30.0);
         }
 
-        // TODO: Update OBC 12V supply
+        // Update OBC/DCDC 12V supply
+        // TODO: When ignition is on, enable this
+        // TODO: Read CP value from Foccci and enable this based on that when
+        //       ignition is off
         hw.set_digital_output(ObcDcdc12VSupply, true);
 
         // Update DC/DC enable
@@ -575,6 +578,7 @@ impl MainState {
         hw.set_digital_output(BatteryPump, get_parameter(ParameterId::MainContactor).value > 0.5);
 
         // Update brake booster
+        // TODO: Control based on ignition key state
         hw.set_digital_output(BrakeBooster, true);
 
         // TODO: Update CP PWM to OBC (SPWM1)
