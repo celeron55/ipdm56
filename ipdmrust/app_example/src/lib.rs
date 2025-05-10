@@ -647,7 +647,7 @@ impl MainState {
                     if can_map.id == frame.id() {
                         match can_map.bits {
                             CanBitSelection::Bit(bit_i) => {
-                                param.set_value((data[(bit_i as usize) / 8] & (1 << (bit_i % 8)))
+                                param.set_value(((data[(bit_i as usize) / 8] & (1 << (bit_i % 8))) >> bit_i)
                                         as f32 * can_map.scale,
                                     self.last_millis);
                             }
