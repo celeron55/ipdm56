@@ -563,6 +563,8 @@ impl MainState {
                     get_parameter(ParameterId::OutlanderHeaterHeating).value > 0.5 ||
                     get_parameter(ParameterId::OutlanderHeaterPowerPercent).value > 0.5 ||
                     get_parameter(ParameterId::OutlanderHeaterT).value > 30.0);
+
+            info!("MainContactor: {:?}", get_parameter(ParameterId::MainContactor).value);
         }
 
         // Update OBC/DCDC 12V supply
