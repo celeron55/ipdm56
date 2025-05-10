@@ -496,6 +496,8 @@ impl MainState {
 
         self.update_parameters(hw);
 
+        self.update_outputs(hw);
+
         if hw.millis() - self.last_test_print_ms > 1000 {
             self.last_test_print_ms = hw.millis();
 
@@ -522,6 +524,17 @@ impl MainState {
         get_parameter(ParameterId::AuxVoltage).set_value(hw.get_analog_input(AnalogInput::AuxVoltage), hw.millis());
 
         self.timeout_parameters(hw);
+    }
+
+    fn update_outputs(&mut self, hw: &mut dyn HardwareInterface) {
+        // TODO: Update battery solenoids (neutral = HOUT3, heat = LOUT2)
+        // TODO: Update cooling fan (LOUT4)
+        // TODO: Update heating loop pump (LOUT5)
+        // TODO: Update OBC 12V supply (HOUT1)
+        // TODO: Update DC/DC enable (HOUT2)
+        // TODO: Update battery pump (HOUT4)
+        // TODO: Update brake booster (HOUT3)
+        // TODO: Send outlander heater CAN messages
     }
 
     fn send_setting_frame(&mut self, hw: &mut dyn HardwareInterface,
