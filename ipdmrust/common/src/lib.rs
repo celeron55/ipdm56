@@ -20,6 +20,14 @@ pub enum AnalogInput {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DigitalInput {
+    Group1OC, // HOUT1..3
+    Group2OC, // HOUT4..6
+    Group3OC, // HOUT7..10
+    Group4OC, // HOUT11,HOUT12,WAKEUP
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DigitalOutput {
     Wakeup,
     HOUT1,
@@ -52,6 +60,8 @@ pub trait HardwareInterface {
     fn send_can(&mut self, frame: bxcan::Frame);
 
     fn get_analog_input(&mut self, input: AnalogInput) -> f32;
+
+    fn get_digital_input(&mut self, input: DigitalInput) -> bool;
 
     fn set_digital_output(&mut self, output: DigitalOutput, value: bool);
 

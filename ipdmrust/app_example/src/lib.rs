@@ -508,6 +508,8 @@ impl MainState {
 
         self.update_parameters(hw);
 
+        self.read_inputs(hw);
+
         self.update_outputs(hw);
 
         if hw.millis() - self.last_test_print_ms > 15000 {
@@ -536,6 +538,21 @@ impl MainState {
         get_parameter(ParameterId::AuxVoltage).set_value(hw.get_analog_input(AnalogInput::AuxVoltage), hw.millis());
 
         self.timeout_parameters(hw);
+    }
+
+    fn read_inputs(&mut self, hw: &mut dyn HardwareInterface) {
+        if hw.get_digital_input(DigitalInput::Group1OC) {
+            info!("-!- DigitalInput::Group1OC");
+        }
+        if hw.get_digital_input(DigitalInput::Group2OC) {
+            info!("-!- DigitalInput::Group2OC");
+        }
+        if hw.get_digital_input(DigitalInput::Group3OC) {
+            info!("-!- DigitalInput::Group3OC");
+        }
+        if hw.get_digital_input(DigitalInput::Group4OC) {
+            info!("-!- DigitalInput::Group4OC");
+        }
     }
 
     fn update_outputs(&mut self, hw: &mut dyn HardwareInterface) {

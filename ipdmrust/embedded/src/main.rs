@@ -203,6 +203,11 @@ type WkupPin = gpio::Pin<'A', 0, gpio::Input>;
 
 // HardwareInterface implementation
 
+type Group1OCPin = gpio::Pin<'D', 8, gpio::Input>;
+type Group2OCPin = gpio::Pin<'D', 9, gpio::Input>;
+type Group3OCPin = gpio::Pin<'C', 8, gpio::Input>;
+type Group4OCPin = gpio::Pin<'C', 9, gpio::Input>;
+
 type Boot0ControlPin = gpio::Pin<'B', 8, gpio::Output<gpio::PushPull>>;
 type WakeupOutputPin = gpio::Pin<'A', 15, gpio::Output<gpio::PushPull>>;
 type HOUT1Pin = gpio::Pin<'E', 0, gpio::Output<gpio::PushPull>>;
@@ -230,6 +235,10 @@ struct HardwareImplementation {
     can_tx_buf: ConstGenericRingBuffer<bxcan::Frame, 10>,
     adc_result_vbat: f32,
     adc_result_tpcb: f32,
+    group1oc_pin: Group1OCPin,
+    group2oc_pin: Group2OCPin,
+    group3oc_pin: Group3OCPin,
+    group4oc_pin: Group4OCPin,
     hout1_pin: HOUT1Pin,
     hout2_pin: HOUT2Pin,
     hout3_pin: HOUT3Pin,
@@ -276,6 +285,15 @@ impl HardwareInterface for HardwareImplementation {
             AnalogInput::AuxVoltage => self.adc_result_vbat,
             AnalogInput::PcbT => self.adc_result_tpcb,
             _ => f32::NAN,
+        }
+    }
+
+    fn get_digital_input(&mut self, input: DigitalInput) -> bool {
+        match input {
+            DigitalInput::Group1OC => self.group1oc_pin.is_high(),
+            DigitalInput::Group2OC => self.group2oc_pin.is_high(),
+            DigitalInput::Group3OC => self.group3oc_pin.is_high(),
+            DigitalInput::Group4OC => self.group4oc_pin.is_high(),
         }
     }
 
@@ -413,6 +431,13 @@ mod rtic_app {
         let gpioc = cx.device.GPIOC.split();
         let gpiod = cx.device.GPIOD.split();
         let gpioe = cx.device.GPIOE.split();
+
+        // Input pins
+
+        let mut group1oc_pin = gpiod.pd8.into_input();
+        let mut group2oc_pin = gpiod.pd9.into_input();
+        let mut group3oc_pin = gpioc.pc8.into_input();
+        let mut group4oc_pin = gpioc.pc9.into_input();
 
         // Output pins
 
@@ -572,6 +597,10 @@ mod rtic_app {
             can_tx_buf: ConstGenericRingBuffer::new(),
             adc_result_vbat: f32::NAN,
             adc_result_tpcb: f32::NAN,
+            group1oc_pin,
+            group2oc_pin,
+            group3oc_pin,
+            group4oc_pin,
             hout1_pin,
             hout2_pin,
             hout3_pin,
