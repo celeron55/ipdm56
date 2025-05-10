@@ -280,6 +280,34 @@ impl HardwareInterface for HardwareImplementation {
     }
 
     fn set_digital_output(&mut self, output: DigitalOutput, value: bool) {
+        let old_value = match output {
+            DigitalOutput::Wakeup => { self.wakeup_output_pin.is_set_high() }
+            DigitalOutput::HOUT1 => { self.hout1_pin.is_set_high() }
+            DigitalOutput::HOUT2 => { self.hout2_pin.is_set_high() }
+            DigitalOutput::HOUT3 => { self.hout3_pin.is_set_high() }
+            DigitalOutput::HOUT4 => { self.hout4_pin.is_set_high() }
+            DigitalOutput::HOUT5 => { self.hout5_pin.is_set_high() }
+            DigitalOutput::HOUT6 => { self.hout6_pin.is_set_high() }
+            DigitalOutput::HOUT7 => { self.hout7_pin.is_set_high() }
+            DigitalOutput::HOUT8 => { self.hout8_pin.is_set_high() }
+            DigitalOutput::HOUT9 => { self.hout9_pin.is_set_high() }
+            DigitalOutput::HOUT10 => { self.hout10_pin.is_set_high() }
+            DigitalOutput::HOUT11 => { self.hout11_pin.is_set_high() }
+            DigitalOutput::HOUT12 => { self.hout12_pin.is_set_high() }
+            DigitalOutput::LOUT1 => { self.lout1_pin.is_set_high() }
+            DigitalOutput::LOUT2 => { self.lout2_pin.is_set_high() }
+            DigitalOutput::LOUT3 => { self.lout3_pin.is_set_high() }
+            DigitalOutput::LOUT4 => { self.lout4_pin.is_set_high() }
+            DigitalOutput::LOUT5 => { self.lout5_pin.is_set_high() }
+            DigitalOutput::LOUT6 => { self.lout6_pin.is_set_high() }
+            // TODO: M* pins
+        };
+
+        if value != old_value {
+            info!("HardwareImplementation::set_digital_output: {:?} {:?} -> {:?}",
+                    output, old_value, value);
+        }
+
         match output {
             DigitalOutput::Wakeup => { self.wakeup_output_pin.set_state(value.into()) }
             DigitalOutput::HOUT1 => { self.hout1_pin.set_state(value.into()) }
