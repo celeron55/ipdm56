@@ -578,6 +578,7 @@ pub struct MainState {
     log_can: bool,
     last_millis: u64,
     dt_ms: u64,
+    last_test_print_ms: u64,
 }
 
 impl MainState {
@@ -587,6 +588,7 @@ impl MainState {
             log_can: false,
             last_millis: 0,
             dt_ms: 0,
+            last_test_print_ms: 0,
         }
     }
 
@@ -602,7 +604,11 @@ impl MainState {
 
         self.update_parameters(hw);
 
-        info!("Test print");
+        if hw.millis() - self.last_test_print_ms > 1000 {
+            self.last_test_print_ms = hw.millis();
+
+            info!("Test print");
+        }
 
         self.last_millis = millis;
         self.update_counter += 1;

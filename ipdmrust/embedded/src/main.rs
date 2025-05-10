@@ -366,7 +366,7 @@ mod rtic_app {
                 gpioa.pa9.into_alternate::<7>(),
                 gpioa.pa10.into_alternate::<7>(),
             ),
-            serial::config::Config::default().baudrate(19200.bps()),
+            serial::config::Config::default().baudrate(115200.bps()),
             &clocks,
         )
         .unwrap();
