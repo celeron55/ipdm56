@@ -97,6 +97,7 @@ fn main() {
         .show_module_names(true)
         .module(module_path!())
         .module("common")
+        .module("app")
         .init()
         .unwrap();
     log::set_max_level(log::LevelFilter::Info);
