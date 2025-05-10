@@ -580,8 +580,11 @@ impl MainState {
                 get_parameter(ParameterId::MainContactor).value > 0.5);
 
         // Update battery pump
-        hw.set_digital_output(BatteryPump,
-                get_parameter(ParameterId::MainContactor).value > 0.5);
+        // TODO: Re-enable.
+        // TODO: It's disabled because it seems to trigger overcurrent
+        //       protection and that's not good for DcdcEnable
+        /*hw.set_digital_output(BatteryPump,
+                get_parameter(ParameterId::MainContactor).value > 0.5);*/
 
         // Update brake booster
         // TODO: Control based on ignition key state
