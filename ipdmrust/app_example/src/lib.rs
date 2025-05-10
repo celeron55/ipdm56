@@ -579,7 +579,11 @@ impl MainState {
 
         // TODO: Update CP PWM to OBC (SPWM1)
 
-        // TODO: Send outlander heater CAN messages
+        // TODO: Send outlander heater control CAN messages
+
+        // TODO: Send PDM status CAN messages
+
+        // TODO: Send coolant_controller status CAN messages
     }
 
     fn send_setting_frame(&mut self, hw: &mut dyn HardwareInterface,
