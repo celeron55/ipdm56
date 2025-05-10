@@ -510,10 +510,10 @@ impl MainState {
 
         self.update_outputs(hw);
 
-        if hw.millis() - self.last_test_print_ms > 1000 {
+        if hw.millis() - self.last_test_print_ms > 15000 {
             self.last_test_print_ms = hw.millis();
 
-            info!("Test print");
+            info!("-!- ipdmrust running");
         }
 
         self.last_millis = millis;
@@ -541,7 +541,7 @@ impl MainState {
     fn update_outputs(&mut self, hw: &mut dyn HardwareInterface) {
         // TODO: Get ignition key state and control things based on it
 
-        if hw.millis() - self.last_solenoid_update_ms > 15000 {
+        if hw.millis() - self.last_solenoid_update_ms > 10000 {
             self.last_solenoid_update_ms = hw.millis();
 
             // Update battery solenoids
