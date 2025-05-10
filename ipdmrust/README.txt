@@ -46,6 +46,9 @@ $ ./flash_dfu_release.sh
 - OR
 $ dfu-util -a 0 --dfuse-address 0x08000000  -D ../target/thumbv7em-none-eabihf/release/embedded.bin
 
+UART firmware update (e.g. via UI8D)
+$ ./flash_uart_release.sh /dev/ttyUSB0
+
 Using an ST-Link v2 clone or similar:
 - Connect GND, SWDIO, SWCLK and 3.3V
 $ ./flash_openocd_release.sh
