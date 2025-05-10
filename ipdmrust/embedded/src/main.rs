@@ -203,7 +203,7 @@ type WkupPin = gpio::Pin<'A', 0, gpio::Input>;
 
 // HardwareInterface implementation
 
-type Boot0ControlPin = gpio::Pin<'A', 8, gpio::Output<gpio::PushPull>>;
+type Boot0ControlPin = gpio::Pin<'B', 8, gpio::Output<gpio::PushPull>>;
 type WakeupOutputPin = gpio::Pin<'A', 15, gpio::Output<gpio::PushPull>>;
 
 struct HardwareImplementation {
@@ -334,7 +334,7 @@ mod rtic_app {
 
         // Output pins
 
-        let boot0_control_pin = gpioa.pa8.into_push_pull_output();
+        let boot0_control_pin = gpiob.pb8.into_push_pull_output();
         let boot0_control_pin = unsafe {
             PANIC_BOOT0_CONTROL_PIN = Some(boot0_control_pin);
             PANIC_BOOT0_CONTROL_PIN.as_mut().unwrap()
@@ -432,7 +432,7 @@ mod rtic_app {
 
         let mut i2c1 = hal::i2c::I2c::new(
             cx.device.I2C1,
-            (gpiob.pb8, gpiob.pb7),
+            (gpiob.pb6, gpiob.pb7),
             hal::i2c::Mode::Standard {
                 frequency: 400.kHz(),
             },
