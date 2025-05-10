@@ -22,7 +22,25 @@ pub enum AnalogInput {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DigitalOutput {
     Wakeup,
-    // TODO: Add digital outputs
+    HOUT1,
+    HOUT2,
+    HOUT3,
+    HOUT4,
+    HOUT5,
+    HOUT6,
+    HOUT7,
+    HOUT8,
+    HOUT9,
+    HOUT10,
+    HOUT11,
+    HOUT12,
+    LOUT1,
+    LOUT2,
+    LOUT3,
+    LOUT4,
+    LOUT5,
+    LOUT6,
+    // TODO: M* pins
 }
 
 pub trait HardwareInterface {
@@ -36,6 +54,8 @@ pub trait HardwareInterface {
     fn get_analog_input(&mut self, input: AnalogInput) -> f32;
 
     fn set_digital_output(&mut self, output: DigitalOutput, value: bool);
+
+    // TODO: Add PWM outputs (LPWM1, LPWM2, LPWM3, LCUR1, SPWM1, SPWM2)
 }
 
 // Parameter definitions

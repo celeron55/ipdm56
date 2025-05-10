@@ -16,6 +16,16 @@ use int_enum::IntEnum;
 use log::{debug, error, info, trace, warn};
 use ringbuffer::RingBuffer;
 
+const ObcDcdc12VSupply: DigitalOutput = DigitalOutput::HOUT1;
+const DcdcEnable: DigitalOutput = DigitalOutput::HOUT6;
+const BatteryPump: DigitalOutput = DigitalOutput::HOUT4;
+const BrakeBooster: DigitalOutput = DigitalOutput::HOUT10;
+
+const BatteryNeutralSolenoid: DigitalOutput = DigitalOutput::LOUT3;
+const BatteryHeatSolenoid: DigitalOutput = DigitalOutput::LOUT2;
+const CoolingFan: DigitalOutput = DigitalOutput::LOUT4;
+const HeatLoopPump: DigitalOutput = DigitalOutput::LOUT5;
+
 #[repr(usize)]
 #[derive(IntEnum, Debug, Clone, Copy)]
 enum ParameterId {
@@ -471,6 +481,7 @@ pub struct MainState {
     last_millis: u64,
     dt_ms: u64,
     last_test_print_ms: u64,
+    last_solenoid_update_ms: u64,
 }
 
 impl MainState {
@@ -481,6 +492,7 @@ impl MainState {
             last_millis: 0,
             dt_ms: 0,
             last_test_print_ms: 0,
+            last_solenoid_update_ms: 0,
         }
     }
 
@@ -527,14 +539,46 @@ impl MainState {
     }
 
     fn update_outputs(&mut self, hw: &mut dyn HardwareInterface) {
-        // TODO: Update battery solenoids (neutral = HOUT3, heat = LOUT2)
-        // TODO: Update cooling fan (LOUT4)
-        // TODO: Update heating loop pump (LOUT5)
-        // TODO: Update OBC 12V supply (HOUT1)
-        // TODO: Update DC/DC enable (HOUT2)
-        // TODO: Update battery pump (HOUT4)
-        // TODO: Update brake booster (HOUT3)
+        // TODO: Get ignition key state and control things based on it
+
+        if hw.millis() - self.last_solenoid_update_ms > 15000 {
+            self.last_solenoid_update_ms = hw.millis();
+
+            // Update battery solenoids
+            let heat_battery = get_parameter(ParameterId::BatteryTMin).value < 3.0 &&
+                    get_parameter(ParameterId::BatteryTMax).value < 25.0;
+            let cool_battery = get_parameter(ParameterId::BatteryTMin).value > 23.0 &&
+                    get_parameter(ParameterId::BatteryTMax).value > 30.0;
+            hw.set_digital_output(BatteryNeutralSolenoid, !cool_battery && !heat_battery);
+            hw.set_digital_output(BatteryHeatSolenoid, heat_battery);
+
+            // Update cooling fan
+            // TODO: Trigger on inverter, motor and OBC temperature also
+            hw.set_digital_output(CoolingFan,
+                    get_parameter(ParameterId::BatteryTMax).value > 35.0 &&
+                    get_parameter(ParameterId::MainContactor).value > 0.5);
+
+            // Update heating loop pump
+            hw.set_digital_output(HeatLoopPump,
+                    get_parameter(ParameterId::OutlanderHeaterHeating).value > 0.5 ||
+                    get_parameter(ParameterId::OutlanderHeaterPowerPercent).value > 0.5 ||
+                    get_parameter(ParameterId::OutlanderHeaterT).value > 30.0);
+        }
+
+        // TODO: Update OBC 12V supply
+        hw.set_digital_output(ObcDcdc12VSupply, true);
+
+        // Update DC/DC enable
+        hw.set_digital_output(DcdcEnable, get_parameter(ParameterId::MainContactor).value > 0.5);
+
+        // Update battery pump
+        hw.set_digital_output(BatteryPump, get_parameter(ParameterId::MainContactor).value > 0.5);
+
+        // Update brake booster
+        hw.set_digital_output(BrakeBooster, true);
+
         // TODO: Update CP PWM to OBC (SPWM1)
+
         // TODO: Send outlander heater CAN messages
     }
 

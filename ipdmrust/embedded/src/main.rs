@@ -205,6 +205,24 @@ type WkupPin = gpio::Pin<'A', 0, gpio::Input>;
 
 type Boot0ControlPin = gpio::Pin<'B', 8, gpio::Output<gpio::PushPull>>;
 type WakeupOutputPin = gpio::Pin<'A', 15, gpio::Output<gpio::PushPull>>;
+type HOUT1Pin = gpio::Pin<'E', 0, gpio::Output<gpio::PushPull>>;
+type HOUT2Pin = gpio::Pin<'E', 1, gpio::Output<gpio::PushPull>>;
+type HOUT3Pin = gpio::Pin<'E', 2, gpio::Output<gpio::PushPull>>;
+type HOUT4Pin = gpio::Pin<'E', 3, gpio::Output<gpio::PushPull>>;
+type HOUT5Pin = gpio::Pin<'E', 4, gpio::Output<gpio::PushPull>>;
+type HOUT6Pin = gpio::Pin<'E', 5, gpio::Output<gpio::PushPull>>;
+type HOUT7Pin = gpio::Pin<'E', 6, gpio::Output<gpio::PushPull>>;
+type HOUT8Pin = gpio::Pin<'D', 2, gpio::Output<gpio::PushPull>>;
+type HOUT9Pin = gpio::Pin<'D', 3, gpio::Output<gpio::PushPull>>;
+type HOUT10Pin = gpio::Pin<'D', 4, gpio::Output<gpio::PushPull>>;
+type HOUT11Pin = gpio::Pin<'D', 7, gpio::Output<gpio::PushPull>>;
+type HOUT12Pin = gpio::Pin<'C', 12, gpio::Output<gpio::PushPull>>;
+type LOUT1Pin = gpio::Pin<'E', 10, gpio::Output<gpio::PushPull>>;
+type LOUT2Pin = gpio::Pin<'E', 11, gpio::Output<gpio::PushPull>>;
+type LOUT3Pin = gpio::Pin<'E', 12, gpio::Output<gpio::PushPull>>;
+type LOUT4Pin = gpio::Pin<'E', 13, gpio::Output<gpio::PushPull>>;
+type LOUT5Pin = gpio::Pin<'E', 14, gpio::Output<gpio::PushPull>>;
+type LOUT6Pin = gpio::Pin<'E', 15, gpio::Output<gpio::PushPull>>;
 
 struct HardwareImplementation {
     boot0_control_pin: &'static mut Boot0ControlPin,
@@ -212,6 +230,24 @@ struct HardwareImplementation {
     can_tx_buf: ConstGenericRingBuffer<bxcan::Frame, 10>,
     adc_result_vbat: f32,
     adc_result_tpcb: f32,
+    hout1_pin: HOUT1Pin,
+    hout2_pin: HOUT2Pin,
+    hout3_pin: HOUT3Pin,
+    hout4_pin: HOUT4Pin,
+    hout5_pin: HOUT5Pin,
+    hout6_pin: HOUT6Pin,
+    hout7_pin: HOUT7Pin,
+    hout8_pin: HOUT8Pin,
+    hout9_pin: HOUT9Pin,
+    hout10_pin: HOUT10Pin,
+    hout11_pin: HOUT11Pin,
+    hout12_pin: HOUT12Pin,
+    lout1_pin: LOUT1Pin,
+    lout2_pin: LOUT2Pin,
+    lout3_pin: LOUT3Pin,
+    lout4_pin: LOUT4Pin,
+    lout5_pin: LOUT5Pin,
+    lout6_pin: LOUT6Pin,
 }
 
 impl HardwareInterface for HardwareImplementation {
@@ -244,9 +280,27 @@ impl HardwareInterface for HardwareImplementation {
     }
 
     fn set_digital_output(&mut self, output: DigitalOutput, value: bool) {
-        // TODO
         match output {
             DigitalOutput::Wakeup => { self.wakeup_output_pin.set_state(value.into()) }
+            DigitalOutput::HOUT1 => { self.hout1_pin.set_state(value.into()) }
+            DigitalOutput::HOUT2 => { self.hout2_pin.set_state(value.into()) }
+            DigitalOutput::HOUT3 => { self.hout3_pin.set_state(value.into()) }
+            DigitalOutput::HOUT4 => { self.hout4_pin.set_state(value.into()) }
+            DigitalOutput::HOUT5 => { self.hout5_pin.set_state(value.into()) }
+            DigitalOutput::HOUT6 => { self.hout6_pin.set_state(value.into()) }
+            DigitalOutput::HOUT7 => { self.hout7_pin.set_state(value.into()) }
+            DigitalOutput::HOUT8 => { self.hout8_pin.set_state(value.into()) }
+            DigitalOutput::HOUT9 => { self.hout9_pin.set_state(value.into()) }
+            DigitalOutput::HOUT10 => { self.hout10_pin.set_state(value.into()) }
+            DigitalOutput::HOUT11 => { self.hout11_pin.set_state(value.into()) }
+            DigitalOutput::HOUT12 => { self.hout12_pin.set_state(value.into()) }
+            DigitalOutput::LOUT1 => { self.lout1_pin.set_state(value.into()) }
+            DigitalOutput::LOUT2 => { self.lout2_pin.set_state(value.into()) }
+            DigitalOutput::LOUT3 => { self.lout3_pin.set_state(value.into()) }
+            DigitalOutput::LOUT4 => { self.lout4_pin.set_state(value.into()) }
+            DigitalOutput::LOUT5 => { self.lout5_pin.set_state(value.into()) }
+            DigitalOutput::LOUT6 => { self.lout6_pin.set_state(value.into()) }
+            // TODO: M* pins
         }
     }
 }
@@ -342,8 +396,24 @@ mod rtic_app {
 
         let mut wakeup_output_pin = gpioa.pa15.into_push_pull_output();
 
+        let mut hout1_pin = gpioe.pe0.into_push_pull_output();
+        let mut hout2_pin = gpioe.pe1.into_push_pull_output();
+        let mut hout3_pin = gpioe.pe2.into_push_pull_output();
+        let mut hout4_pin = gpioe.pe3.into_push_pull_output();
+        let mut hout5_pin = gpioe.pe4.into_push_pull_output();
+        let mut hout6_pin = gpioe.pe5.into_push_pull_output();
+        let mut hout7_pin = gpioe.pe6.into_push_pull_output();
         let mut hout8_pin = gpiod.pd2.into_push_pull_output();
-        hout8_pin.set_high();
+        let mut hout9_pin = gpiod.pd3.into_push_pull_output();
+        let mut hout10_pin = gpiod.pd4.into_push_pull_output();
+        let mut hout11_pin = gpiod.pd7.into_push_pull_output();
+        let mut hout12_pin = gpioc.pc12.into_push_pull_output();
+        let mut lout1_pin = gpioe.pe10.into_push_pull_output();
+        let mut lout2_pin = gpioe.pe11.into_push_pull_output();
+        let mut lout3_pin = gpioe.pe12.into_push_pull_output();
+        let mut lout4_pin = gpioe.pe13.into_push_pull_output();
+        let mut lout5_pin = gpioe.pe14.into_push_pull_output();
+        let mut lout6_pin = gpioe.pe15.into_push_pull_output();
 
         // SysTick
 
@@ -474,6 +544,24 @@ mod rtic_app {
             can_tx_buf: ConstGenericRingBuffer::new(),
             adc_result_vbat: f32::NAN,
             adc_result_tpcb: f32::NAN,
+            hout1_pin,
+            hout2_pin,
+            hout3_pin,
+            hout4_pin,
+            hout5_pin,
+            hout6_pin,
+            hout7_pin,
+            hout8_pin,
+            hout9_pin,
+            hout10_pin,
+            hout11_pin,
+            hout12_pin,
+            lout1_pin,
+            lout2_pin,
+            lout3_pin,
+            lout4_pin,
+            lout5_pin,
+            lout6_pin,
         };
 
         // Schedule tasks
