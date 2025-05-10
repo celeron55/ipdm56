@@ -43,12 +43,12 @@ enum ParameterId {
     ObcDcv = 21,
     ObcDcc = 22,
     AcVoltage = 23,
-    PmState = 24,
-    PmCr = 25,
-    BmsChargeCompleteVoltageSetting = 26,
-    Ipdm1ChargeCompleteVoltageSetting = 27,
-    Ipdm1AcChargeCurrentSetting = 28,
-    AcChargeCurrentSetting = 29,
+    PdmState = 24, // TODO: Remove
+    OutlanderHeaterT = 25,
+    OutlanderHeaterHeating = 26,
+    OutlanderHeaterPowerPercent = 27,
+    CruiseActive = 28,
+    CruiseRequested = 29,
 }
 
 static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
@@ -87,7 +87,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "degC",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x031).unwrap()),
+            id: bxcan::Id::Standard(StandardId::new(0x101).unwrap()),
             bits: CanBitSelection::Int8(3),
             scale: 1.0,
         }),
@@ -105,7 +105,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "degC",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x031).unwrap()),
+            id: bxcan::Id::Standard(StandardId::new(0x101).unwrap()),
             bits: CanBitSelection::Int8(4),
             scale: 1.0,
         }),
@@ -123,7 +123,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 2,
         unit: "V",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x031).unwrap()),
+            id: bxcan::Id::Standard(StandardId::new(0x101).unwrap()),
             bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
                 (((data[0] as u16) << 4) | ((data[1] as u16) >> 4)) as f32
             }),
@@ -143,7 +143,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 2,
         unit: "V",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x031).unwrap()),
+            id: bxcan::Id::Standard(StandardId::new(0x101).unwrap()),
             bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
                 ((((data[1] & 0x0f) as u16) << 8) | data[2] as u16) as f32
             }),
@@ -163,7 +163,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "%",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x032).unwrap()),
+            id: bxcan::Id::Standard(StandardId::new(0x102).unwrap()),
             bits: CanBitSelection::Uint8(6),
             scale: 100.0 / 255.0,
         }),
@@ -337,7 +337,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x030).unwrap()),
+            id: bxcan::Id::Standard(StandardId::new(0x100).unwrap()),
             bits: CanBitSelection::Bit(2),
             scale: 1.0,
         }),
@@ -355,7 +355,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x030).unwrap()),
+            id: bxcan::Id::Standard(StandardId::new(0x100).unwrap()),
             bits: CanBitSelection::Bit(6),
             scale: 1.0,
         }),
@@ -373,7 +373,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x031).unwrap()),
+            id: bxcan::Id::Standard(StandardId::new(0x101).unwrap()),
             bits: CanBitSelection::Bit(5 * 8 + 0),
             scale: 1.0,
         }),
@@ -439,108 +439,114 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         update_timestamp: 0,
     },
     Parameter {
-        id: ParameterId::PmState,
-        display_name: "PmState",
+        id: ParameterId::PdmState,
+        display_name: "PdmState",
         value: f32::NAN,
         decimals: 0,
         unit: "",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x550).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 { (data[5] & 0x0f) as f32 }),
+            id: bxcan::Id::Standard(StandardId::new(0x203).unwrap()),
+            bits: CanBitSelection::Function(|data: &[u8]| -> f32 { (data[0] >> 4) as f32 }),
             scale: 1.0,
         }),
         report_map: Some(ReportMap {
-            name: "pms",
+            name: "pdms",
             decimals: 0,
             scale: 1.0,
         }),
         update_timestamp: 0,
     },
     Parameter {
-        id: ParameterId::PmCr,
-        display_name: "PmCr",
+        id: ParameterId::OutlanderHeaterT,
+        display_name: "OutlH T",
+        value: f32::NAN,
+        decimals: 0,
+        unit: "degC",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x398).unwrap()),
+            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
+                let t1 = data[3] as i8 - 40;
+                let t2 = data[4] as i8 - 40;
+                (if t1 > t2 { t1 } else { t2 }) as f32
+            }),
+            scale: 1.0,
+        }),
+        report_map: None,
+        update_timestamp: 0,
+    },
+    Parameter {
+        id: ParameterId::OutlanderHeaterHeating,
+        display_name: "OutlH heating",
         value: f32::NAN,
         decimals: 0,
         unit: "",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x550).unwrap()),
+            id: bxcan::Id::Standard(StandardId::new(0x398).unwrap()),
             bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
-                ((data[5] & 0xf0) >> 4) as f32
+                if data[5] > 0 {
+                    1.0
+                } else {
+                    0.0
+                }
             }),
             scale: 1.0,
         }),
         report_map: Some(ReportMap {
-            name: "pmcr",
+            name: "ohh",
             decimals: 0,
             scale: 1.0,
         }),
         update_timestamp: 0,
     },
     Parameter {
-        id: ParameterId::BmsChargeCompleteVoltageSetting,
-        display_name: "BmsChgCompV",
+        id: ParameterId::OutlanderHeaterPowerPercent,
+        display_name: "OutlH power",
         value: f32::NAN,
         decimals: 0,
-        unit: "mV",
+        unit: "%",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x034).unwrap()),
+            id: bxcan::Id::Standard(StandardId::new(0x398).unwrap()),
             bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
-                (((data[0] as u16) << 8) | data[1] as u16) as f32
+                // TODO: This accurate. The heater can be requested different
+                //       power levels in 0x188
+                if data[5] > 0 {
+                    100.0
+                } else {
+                    0.0
+                }
             }),
             scale: 1.0,
         }),
-        report_map: Some(ReportMap {
-            name: "bccv",
-            decimals: 0,
-            scale: 1.0,
-        }),
+        report_map: None,
         update_timestamp: 0,
     },
     Parameter {
-        id: ParameterId::Ipdm1ChargeCompleteVoltageSetting,
-        display_name: "Ipdm1ChgCompV",
+        id: ParameterId::CruiseActive,
+        display_name: "Cruise active",
         value: f32::NAN,
         decimals: 0,
-        unit: "mV",
+        unit: "",
         can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x550).unwrap()),
-            bits: CanBitSelection::Uint8(4),
-            scale: 20.0,
+            id: bxcan::Id::Standard(StandardId::new(0x300).unwrap()),
+            bits: CanBitSelection::Bit(2),
+            scale: 1.0,
         }),
         report_map: Some(ReportMap {
-            name: "i1ccv",
+            name: "cru",
             decimals: 0,
             scale: 1.0,
         }),
         update_timestamp: 0,
     },
     Parameter {
-        id: ParameterId::Ipdm1AcChargeCurrentSetting,
-        display_name: "Ipdm1AcCurSet",
-        value: f32::NAN,
+        id: ParameterId::CruiseRequested,
+        display_name: "Cruise requested",
+        value: 0.0,
         decimals: 0,
-        unit: "A",
-        can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x550).unwrap()),
-            bits: CanBitSelection::Uint8(3),
-            scale: 0.2,
-        }),
-        report_map: Some(ReportMap {
-            name: "i1acc",
-            decimals: 0,
-            scale: 1.0,
-        }),
-        update_timestamp: 0,
-    },
-    Parameter {
-        id: ParameterId::AcChargeCurrentSetting,
-        display_name: "AcCurSet",
-        value: 10.0,
-        decimals: 0,
-        unit: "A",
+        unit: "",
         can_map: None,
         report_map: Some(ReportMap {
-            name: "acc",
+            name: "crur",
             decimals: 0,
             scale: 1.0,
         }),
