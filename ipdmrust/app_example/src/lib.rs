@@ -59,11 +59,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "ms",
         can_map: None,
-        report_map: Some(ReportMap {
-            name: "t",
-            decimals: 0,
-            scale: 0.001,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -73,11 +68,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 2,
         unit: "V",
         can_map: None,
-        report_map: Some(ReportMap {
-            name: "vaux",
-            decimals: 1,
-            scale: 1.0,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -91,11 +81,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             bits: CanBitSelection::Int8(3),
             scale: 1.0,
         }),
-        report_map: Some(ReportMap {
-            name: "t0",
-            decimals: 0,
-            scale: 1.0,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -107,11 +92,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         can_map: Some(CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x101).unwrap()),
             bits: CanBitSelection::Int8(4),
-            scale: 1.0,
-        }),
-        report_map: Some(ReportMap {
-            name: "t1",
-            decimals: 0,
             scale: 1.0,
         }),
         update_timestamp: 0,
@@ -129,11 +109,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             }),
             scale: 0.01,
         }),
-        report_map: Some(ReportMap {
-            name: "v0",
-            decimals: 0,
-            scale: 100.0,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -149,11 +124,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             }),
             scale: 0.01,
         }),
-        report_map: Some(ReportMap {
-            name: "v1",
-            decimals: 0,
-            scale: 100.0,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -167,11 +137,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             bits: CanBitSelection::Uint8(6),
             scale: 100.0 / 255.0,
         }),
-        report_map: Some(ReportMap {
-            name: "er",
-            decimals: 0,
-            scale: 2.55,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -181,7 +146,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "km",
         can_map: None,
-        report_map: None,
         update_timestamp: 0,
     },
     Parameter {
@@ -191,7 +155,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "kW",
         can_map: None,
-        report_map: None,
         update_timestamp: 0,
     },
     Parameter {
@@ -201,7 +164,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "km",
         can_map: None,
-        report_map: None,
         update_timestamp: 0,
     },
     Parameter {
@@ -211,7 +173,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "Wh/km",
         can_map: None,
-        report_map: None,
         update_timestamp: 0,
     },
     Parameter {
@@ -221,7 +182,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "km",
         can_map: None,
-        report_map: None,
         update_timestamp: 0,
     },
     Parameter {
@@ -231,7 +191,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "Wh/km",
         can_map: None,
-        report_map: None,
         update_timestamp: 0,
     },
     Parameter {
@@ -241,7 +200,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 1,
         unit: "s",
         can_map: None,
-        report_map: None,
         update_timestamp: 0,
     },
     Parameter {
@@ -257,11 +215,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
                 let t2 = data[4] as i8 - 40;
                 (if t1 > t2 { t1 } else { t2 }) as f32
             }),
-            scale: 1.0,
-        }),
-        report_map: Some(ReportMap {
-            name: "ht",
-            decimals: 0,
             scale: 1.0,
         }),
         update_timestamp: 0,
@@ -281,11 +234,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
                     0.0
                 }
             }),
-            scale: 1.0,
-        }),
-        report_map: Some(ReportMap {
-            name: "ohh",
-            decimals: 0,
             scale: 1.0,
         }),
         update_timestamp: 0,
@@ -309,11 +257,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             }),
             scale: 1.0,
         }),
-        report_map: Some(ReportMap {
-            name: "he",
-            decimals: 0,
-            scale: 1.0,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -323,11 +266,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 1,
         unit: "degC",
         can_map: None, // TODO: Get from UI8D
-        report_map: Some(ReportMap {
-            name: "cabin_t",
-            decimals: 1,
-            scale: 1.0,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -339,11 +277,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         can_map: Some(CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x100).unwrap()),
             bits: CanBitSelection::Bit(2),
-            scale: 1.0,
-        }),
-        report_map: Some(ReportMap {
-            name: "mc",
-            decimals: 0,
             scale: 1.0,
         }),
         update_timestamp: 0,
@@ -359,11 +292,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             bits: CanBitSelection::Bit(6),
             scale: 1.0,
         }),
-        report_map: Some(ReportMap {
-            name: "pchg_f",
-            decimals: 0,
-            scale: 1.0,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -375,11 +303,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         can_map: Some(CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x101).unwrap()),
             bits: CanBitSelection::Bit(5 * 8 + 0),
-            scale: 1.0,
-        }),
-        report_map: Some(ReportMap {
-            name: "b",
-            decimals: 0,
             scale: 1.0,
         }),
         update_timestamp: 0,
@@ -395,11 +318,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             bits: CanBitSelection::Uint8(0),
             scale: 2.0,
         }),
-        report_map: Some(ReportMap {
-            name: "pv",
-            decimals: 0,
-            scale: 10.0,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -412,11 +330,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             id: bxcan::Id::Standard(StandardId::new(0x389).unwrap()),
             bits: CanBitSelection::Uint8(2),
             scale: 0.1,
-        }),
-        report_map: Some(ReportMap {
-            name: "pc",
-            decimals: 0,
-            scale: 10.0,
         }),
         update_timestamp: 0,
     },
@@ -431,11 +344,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             bits: CanBitSelection::Uint8(1),
             scale: 1.0,
         }),
-        report_map: Some(ReportMap {
-            name: "ac",
-            decimals: 0,
-            scale: 1.0,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -447,11 +355,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         can_map: Some(CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x203).unwrap()),
             bits: CanBitSelection::Function(|data: &[u8]| -> f32 { (data[0] >> 4) as f32 }),
-            scale: 1.0,
-        }),
-        report_map: Some(ReportMap {
-            name: "pdms",
-            decimals: 0,
             scale: 1.0,
         }),
         update_timestamp: 0,
@@ -471,7 +374,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             }),
             scale: 1.0,
         }),
-        report_map: None,
         update_timestamp: 0,
     },
     Parameter {
@@ -489,11 +391,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
                     0.0
                 }
             }),
-            scale: 1.0,
-        }),
-        report_map: Some(ReportMap {
-            name: "ohh",
-            decimals: 0,
             scale: 1.0,
         }),
         update_timestamp: 0,
@@ -517,7 +414,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             }),
             scale: 1.0,
         }),
-        report_map: None,
         update_timestamp: 0,
     },
     Parameter {
@@ -531,11 +427,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
             bits: CanBitSelection::Bit(2),
             scale: 1.0,
         }),
-        report_map: Some(ReportMap {
-            name: "cru",
-            decimals: 0,
-            scale: 1.0,
-        }),
         update_timestamp: 0,
     },
     Parameter {
@@ -545,11 +436,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         decimals: 0,
         unit: "",
         can_map: None,
-        report_map: Some(ReportMap {
-            name: "crur",
-            decimals: 0,
-            scale: 1.0,
-        }),
         update_timestamp: 0,
     },
 ];

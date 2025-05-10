@@ -66,7 +66,6 @@ pub struct Parameter<'a, ID> {
     pub decimals: u8,
     pub unit: &'a str,
     pub can_map: Option<CanMap>,
-    pub report_map: Option<ReportMap<'a>>,
     pub update_timestamp: u64,
 }
 
@@ -78,7 +77,6 @@ impl<'a, ID> Parameter<'a, ID> {
         decimals: u8,
         unit: &'a str,
         can_map: Option<CanMap>,
-        report_map: Option<ReportMap<'a>>,
     ) -> Self {
         Self {
             id: id,
@@ -87,7 +85,6 @@ impl<'a, ID> Parameter<'a, ID> {
             decimals: decimals,
             unit: unit,
             can_map: can_map,
-            report_map: report_map,
             update_timestamp: 0,
         }
     }
