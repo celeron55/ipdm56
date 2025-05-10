@@ -354,7 +354,7 @@ mod rtic_app {
 
         init_logger();
 
-        info!("-!- ui8d boot");
+        info!("-!- ipdmrust boot");
 
         // USART1 (TX=PA9, RX=PA10): TTL serial on programming header. We
         // provide our serial console here, and also on native USB. Note that
@@ -407,7 +407,7 @@ mod rtic_app {
         .strings(&[
             StringDescriptors::new(usb_device::descriptor::lang_id::LangID::EN)
                 .manufacturer("8Dromeda Productions")
-                .product("ui8d")
+                .product("ipdmrust")
                 .serial_number("1337"),
         ])
         .unwrap()
@@ -478,7 +478,7 @@ mod rtic_app {
 
         // Schedule tasks
 
-        ui_task::spawn().ok();
+        logic_task::spawn().ok();
         adc_task::spawn().ok();
 
         // Initialize context
@@ -544,7 +544,7 @@ mod rtic_app {
             hw,
         ]
     )]
-    async fn ui_task(mut cx: ui_task::Context) {
+    async fn logic_task(mut cx: logic_task::Context) {
         let mut state = app::MainState::new();
 
         loop {

@@ -102,7 +102,7 @@ fn main() {
     log::set_max_level(log::LevelFilter::Info);
 
     let mut window: PistonWindow = WindowSettings::new(
-        "ui8drust",
+        "ipdmrust",
         [
             (DISPLAY_W + DISPLAY_BORDER * 2) * DISPLAY_SCALE,
             (DISPLAY_H + DISPLAY_BORDER * 2) * DISPLAY_SCALE,
