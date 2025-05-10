@@ -372,9 +372,9 @@ mod rtic_app {
         can1: bxcan::Can<CAN1>,
         can_rx_buf: ConstGenericRingBuffer<bxcan::Frame, 10>,
         can_tx_buf: ConstGenericRingBuffer<bxcan::Frame, 10>,
-        adc_result_ldr: u16,
         adc_result_vbat: f32,
         adc_result_tpcb: f32,
+        adc_result_current_vbat: u16,
     }
 
     #[local]
@@ -638,9 +638,9 @@ mod rtic_app {
                 can1: can1,
                 can_rx_buf: ConstGenericRingBuffer::new(),
                 can_tx_buf: ConstGenericRingBuffer::new(),
-                adc_result_ldr: 0,
                 adc_result_vbat: 0.0,
                 adc_result_tpcb: 0.0,
+                adc_result_current_vbat: 0,
             },
             Local {
                 usart1_rx: usart1_rx,
@@ -680,9 +680,9 @@ mod rtic_app {
             can1,
             can_rx_buf,
             can_tx_buf,
-            adc_result_ldr,
             adc_result_vbat,
             adc_result_tpcb,
+            adc_result_current_vbat,
         ],
         local = [
             command_accumulator,
@@ -735,7 +735,7 @@ mod rtic_app {
 
     #[task(priority = 2,
         shared = [
-            adc_result_ldr,
+            adc_result_current_vbat,
             adc_result_vbat,
             adc_result_tpcb,
         ],
@@ -758,18 +758,19 @@ mod rtic_app {
             let adc_result_vbat =
                 cx.local
                     .adc1
-                    .convert(cx.local.adc_pa2, SampleTime::Cycles_480) as f32
+                    .convert(cx.local.adc_pa3, SampleTime::Cycles_480) as f32
                     * 0.00881;
 
             // Assign with lowpass
             cx.shared.adc_result_vbat.lock(|v| *v = *v * 0.98 + adc_result_vbat * 0.02);
 
-            let adc_result_ldr = cx
+            // TODO: Current measurements on PA4..PA7
+            /*let adc_result_current_vbat = cx
                 .local
                 .adc1
-                .convert(cx.local.adc_pa3, SampleTime::Cycles_480);
+                .convert(cx.local.adc_pa4, SampleTime::Cycles_480);
 
-            cx.shared.adc_result_ldr.lock(|v| *v = adc_result_ldr);
+            cx.shared.adc_result_current_vbat.lock(|v| *v = adc_result_current_vbat);*/
 
             // Correct conversion from ADC to DegC (10k NTC thermistor with 10k
             // pull-up resistor)
