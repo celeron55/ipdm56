@@ -322,7 +322,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         value: f32::NAN,
         decimals: 1,
         unit: "degC",
-        can_map: None,
+        can_map: None, // TODO: Get from UI8D
         report_map: Some(ReportMap {
             name: "cabin_t",
             decimals: 1,
@@ -634,9 +634,6 @@ impl MainState {
     fn update_parameters(&mut self, hw: &mut dyn HardwareInterface) {
         get_parameter(ParameterId::TicksMs).set_value(hw.millis() as f32, hw.millis());
         get_parameter(ParameterId::AuxVoltage).set_value(hw.get_analog_input(AnalogInput::AuxVoltage), hw.millis());
-        get_parameter(ParameterId::CabinT).set_value(hw.get_analog_input(AnalogInput::PcbT) - 12.0, hw.millis());
-
-        // TODO: Update ParameterId::CabinT based on ADC
 
         self.timeout_parameters(hw);
     }
