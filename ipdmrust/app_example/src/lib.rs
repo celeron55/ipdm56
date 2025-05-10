@@ -566,16 +566,20 @@ impl MainState {
         }
 
         // Update OBC/DCDC 12V supply
-        // TODO: When ignition is on, enable this
+        // TODO: When main contactor is closed, enable this (for DC/DC)
+        // TODO: When ignition is on, enable this (for DC/DC and precharge)
         // TODO: Read CP value from Foccci and enable this based on that when
         //       ignition is off
-        hw.set_digital_output(ObcDcdc12VSupply, true);
+        hw.set_digital_output(ObcDcdc12VSupply,
+                get_parameter(ParameterId::MainContactor).value > 0.5);
 
         // Update DC/DC enable
-        hw.set_digital_output(DcdcEnable, get_parameter(ParameterId::MainContactor).value > 0.5);
+        hw.set_digital_output(DcdcEnable,
+                get_parameter(ParameterId::MainContactor).value > 0.5);
 
         // Update battery pump
-        hw.set_digital_output(BatteryPump, get_parameter(ParameterId::MainContactor).value > 0.5);
+        hw.set_digital_output(BatteryPump,
+                get_parameter(ParameterId::MainContactor).value > 0.5);
 
         // Update brake booster
         // TODO: Control based on ignition key state
