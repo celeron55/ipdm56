@@ -534,6 +534,7 @@ impl MainState {
         // TODO: Update DC/DC enable (HOUT2)
         // TODO: Update battery pump (HOUT4)
         // TODO: Update brake booster (HOUT3)
+        // TODO: Update CP PWM to OBC (SPWM1)
         // TODO: Send outlander heater CAN messages
     }
 
