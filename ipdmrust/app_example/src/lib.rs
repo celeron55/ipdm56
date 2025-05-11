@@ -698,18 +698,20 @@ impl MainState {
     }
 
     fn send_can_30ms(&mut self, hw: &mut dyn HardwareInterface) {
-        // Outlander HV status message (for heater and OBC)
-        // 10...30ms is fine for this (EV-Omega uses 30ms)
-        // TODO: EVSE control
-        let activate_evse = false;
-        /*if activate_evse {
-            data[2] |= 0xb6; // 0xb6 = Activate EVSE (OBC)
-        }*/
-        self.send_normal_frame(hw, 0x285, &[
-            0x00, 0x00,
-            0x14 | if activate_evse { 0xb6 } else { 0 }, // 0xb6 = Activate EVSE (OBC)
-            0x21, 0x90, 0xfe, 0x0c, 0x10
-        ]);
+        if get_parameter(ParameterId::MainContactor).value > 0.5 {
+            // Outlander HV status message (for heater and OBC)
+            // 10...30ms is fine for this (EV-Omega uses 30ms)
+            // TODO: EVSE control
+            let activate_evse = false;
+            /*if activate_evse {
+                data[2] |= 0xb6; // 0xb6 = Activate EVSE (OBC)
+            }*/
+            self.send_normal_frame(hw, 0x285, &[
+                0x00, 0x00,
+                0x14 | if activate_evse { 0xb6 } else { 0 }, // 0xb6 = Activate EVSE (OBC)
+                0x21, 0x90, 0xfe, 0x0c, 0x10
+            ]);
+        }
     }
 
     fn send_normal_frame(&mut self, hw: &mut dyn HardwareInterface,
