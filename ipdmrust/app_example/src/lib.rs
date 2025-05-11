@@ -59,9 +59,13 @@ enum ParameterId {
     OutlanderHeaterPowerPercent = 27,
     CruiseActive = 28,
     CruiseRequested = 29,
+    // TODO: Delete these and replace with max discharge current and max charge
+    //       current. These are redundant.
+    PermitDischarge = 30,
+    PermitCharge = 31,
 }
 
-static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
+static mut PARAMETERS: [Parameter<ParameterId>; 32] = [
     Parameter {
         id: ParameterId::TicksMs,
         display_name: "Ticks",
@@ -448,6 +452,32 @@ static mut PARAMETERS: [Parameter<ParameterId>; 30] = [
         can_map: None,
         update_timestamp: 0,
     },
+    Parameter {
+        id: ParameterId::PermitDischarge,
+        display_name: "Permit dischg.",
+        value: f32::NAN,
+        decimals: 0,
+        unit: "",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x100).unwrap()),
+            bits: CanBitSelection::Bit(1),
+            scale: 1.0,
+        }),
+        update_timestamp: 0,
+    },
+    Parameter {
+        id: ParameterId::PermitCharge,
+        display_name: "Permit charge",
+        value: f32::NAN,
+        decimals: 0,
+        unit: "",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x100).unwrap()),
+            bits: CanBitSelection::Bit(0),
+            scale: 1.0,
+        }),
+        update_timestamp: 0,
+    },
 ];
 
 fn get_parameters() -> &'static mut [Parameter<'static, ParameterId>] {
@@ -482,6 +512,10 @@ pub struct MainState {
     dt_ms: u64,
     last_test_print_ms: u64,
     last_solenoid_update_ms: u64,
+    last_can_30ms: u64,
+    last_can_200ms: u64,
+    last_heater_update_ms: u64,
+    request_heater_power_percent: f32,
 }
 
 impl MainState {
@@ -493,6 +527,10 @@ impl MainState {
             dt_ms: 0,
             last_test_print_ms: 0,
             last_solenoid_update_ms: 0,
+            last_can_30ms: 0,
+            last_can_200ms: 0,
+            last_heater_update_ms: 0,
+            request_heater_power_percent: 0.0,
         }
     }
 
@@ -512,7 +550,22 @@ impl MainState {
 
         self.update_outputs(hw);
 
-        if hw.millis() - self.last_test_print_ms > 15000 {
+        if hw.millis() - self.last_heater_update_ms >= 2000 {
+            self.last_heater_update_ms = hw.millis();
+            self.update_heater(hw);
+        }
+
+        if hw.millis() - self.last_can_200ms >= 200 {
+            self.last_can_200ms = hw.millis();
+            self.send_can_200ms(hw);
+        }
+
+        if hw.millis() - self.last_can_30ms >= 30 {
+            self.last_can_30ms = hw.millis();
+            self.send_can_30ms(hw);
+        }
+
+        if hw.millis() - self.last_test_print_ms >= 15000 {
             self.last_test_print_ms = hw.millis();
 
             info!("-!- ipdmrust running");
@@ -538,6 +591,23 @@ impl MainState {
         get_parameter(ParameterId::AuxVoltage).set_value(hw.get_analog_input(AnalogInput::AuxVoltage), hw.millis());
 
         self.timeout_parameters(hw);
+    }
+
+    fn update_heater(&mut self, hw: &mut dyn HardwareInterface) {
+        self.request_heater_power_percent = if
+            get_parameter(ParameterId::HeaterT).value.is_nan() ||
+            get_parameter(ParameterId::MainContactor).value < 0.5 ||
+            get_parameter(ParameterId::PermitDischarge).value < 0.5
+        {
+            0.0
+        } else if get_parameter(ParameterId::HeaterT).value < 55.0 {
+            100.0
+        } else if get_parameter(ParameterId::HeaterT).value < 60.0 {
+            50.0
+        } else {
+            0.0
+        };
+        info!("request_heater_power_percent = {:?}", self.request_heater_power_percent);
     }
 
     fn read_inputs(&mut self, hw: &mut dyn HardwareInterface) {
@@ -604,11 +674,50 @@ impl MainState {
         // TODO: Control based on ignition key state
         hw.set_digital_output(BrakeBooster, true);
 
-        // TODO: Send outlander heater control CAN messages
-
         // TODO: Update CP PWM to OBC (SPWM1)
 
         // TODO: Send outlander OBC control CAN messages
+    }
+
+    fn send_can_200ms(&mut self, hw: &mut dyn HardwareInterface) {
+        {
+            // Outlander heater control
+            let requested_power_command = if self.request_heater_power_percent > 70.0 {
+                0xa2
+            } else if self.request_heater_power_percent > 30.0 {
+                0x32
+            } else {
+                0
+            };
+            self.send_normal_frame(hw, 0x188, &[
+                0x03, 0x50,
+                requested_power_command,
+                0x4D, 0x00, 0x00, 0x00, 0x00
+            ]);
+        }
+    }
+
+    fn send_can_30ms(&mut self, hw: &mut dyn HardwareInterface) {
+        // Outlander HV status message (for heater and OBC)
+        // 10...30ms is fine for this (EV-Omega uses 30ms)
+        // TODO: EVSE control
+        let activate_evse = false;
+        /*if activate_evse {
+            data[2] |= 0xb6; // 0xb6 = Activate EVSE (OBC)
+        }*/
+        self.send_normal_frame(hw, 0x285, &[
+            0x00, 0x00,
+            0x14 | if activate_evse { 0xb6 } else { 0 }, // 0xb6 = Activate EVSE (OBC)
+            0x21, 0x90, 0xfe, 0x0c, 0x10
+        ]);
+    }
+
+    fn send_normal_frame(&mut self, hw: &mut dyn HardwareInterface,
+            frame_id: u16, data: &[u8]) {
+        hw.send_can(bxcan::Frame::new_data(
+            bxcan::StandardId::new(frame_id).unwrap(),
+            bxcan::Data::new(data).unwrap()
+        ));
     }
 
     fn send_setting_frame(&mut self, hw: &mut dyn HardwareInterface,
