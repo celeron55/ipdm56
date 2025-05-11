@@ -40,6 +40,26 @@ iPDM56 v2.0 fixing the board
 4. The C7 capacitor interferes with the enclosure. Make sure to cut or grind the
    cover so that there's room for the capacitor.
 
+5. The HOUT current limiters are very strict at limiting to 10 A, no matter the
+   length of the pulse. When the limit trips, the output will deactivate for
+   about 1 second. This causes issues trying to power pumps and other things
+   that take an initial pulse of current. The fix to this is difficult to make
+   on the board, but for the sake of completeness, here it is:
+    - For U18A, U18B, U19A and U19B (or just the ones you need >10A pulses on):
+        - Cut the `*_CURRENT_MEAS` trace coming from U3, U5, U10 or U4 in such a
+          way that you can still connect to both cut ends
+        - Solder a 10k resistor over the cut
+        - Solder 3 diodes in series, and parallel that with the 10k resistor
+        - Solder a 10uF capacitor from the U18A/U19 side to ground
+    - This increases the overcurrent protection limit to about 18 A for pulses
+      of about 20 ms in length.
+        - The upcoming iPDM56 v2.1 will hardware trip on 20 ms pulses at about
+          21 A, but in order to do that it will have further changes.
+    - These limiters are required to protect the MOSFETs and wiring. If you'd
+      like to disable the limiters, you need to provide each high-side output
+      with an external 7.5A fuse. (a 10A fuse will allow 10A for too long for
+      the MOSFETs to survive)
+
 iPDM56 v2.0 flashing
 --------------------
 
