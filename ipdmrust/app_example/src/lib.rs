@@ -63,9 +63,10 @@ enum ParameterId {
     //       current. These are redundant.
     PermitDischarge = 30,
     PermitCharge = 31,
+    HvacRequested = 32,
 }
 
-static mut PARAMETERS: [Parameter<ParameterId>; 32] = [
+static mut PARAMETERS: [Parameter<ParameterId>; 33] = [
     Parameter {
         id: ParameterId::TicksMs,
         display_name: "Ticks",
@@ -478,6 +479,25 @@ static mut PARAMETERS: [Parameter<ParameterId>; 32] = [
         }),
         update_timestamp: 0,
     },
+    Parameter {
+        id: ParameterId::HvacRequested,
+        display_name: "HVAC requested",
+        value: f32::NAN,
+        decimals: 0,
+        unit: "",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x570).unwrap()),
+            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
+                if data[0] == 2 && data[5] == 1 {
+                    1.0
+                } else {
+                    0.0
+                }
+            }),
+            scale: 1.0,
+        }),
+        update_timestamp: 0,
+    },
 ];
 
 fn get_parameters() -> &'static mut [Parameter<'static, ParameterId>] {
@@ -627,6 +647,7 @@ impl MainState {
 
     fn update_outputs(&mut self, hw: &mut dyn HardwareInterface) {
         // TODO: Get ignition key state and control things based on it
+        // TODO: Also follow ParameterId::HvacRequested
 
         if hw.millis() - self.last_solenoid_update_ms > 10000 {
             self.last_solenoid_update_ms = hw.millis();
@@ -695,6 +716,9 @@ impl MainState {
                 0x4D, 0x00, 0x00, 0x00, 0x00
             ]);
         }
+
+
+        // TODO: Request main contactor based on ParameterId::HvacRequested
     }
 
     fn send_can_30ms(&mut self, hw: &mut dyn HardwareInterface) {
