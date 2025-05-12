@@ -175,6 +175,30 @@ unsafe impl bxcan::FilterOwner for CAN1 {
     const NUM_FILTER_BANKS: u8 = 28;
 }
 
+// TIM3 PWM
+
+type Tim3Pwm = hal::timer::PwmHz<
+    hal::pac::TIM3,
+    (
+        hal::timer::ChannelBuilder<hal::pac::TIM3, 0, false>, // LPWM2
+        hal::timer::ChannelBuilder<hal::pac::TIM3, 1, false>, // LPWM3
+    ),
+>;
+
+fn set_lpwm2(pwm: f32, pwm_timer: &mut Tim3Pwm) {
+    pwm_timer.set_duty(
+        hal::timer::Channel::C1,
+        (pwm_timer.get_max_duty() as f32 * pwm) as u16,
+    );
+}
+
+fn set_lpwm3(pwm: f32, pwm_timer: &mut Tim3Pwm) {
+    pwm_timer.set_duty(
+        hal::timer::Channel::C2,
+        (pwm_timer.get_max_duty() as f32 * pwm) as u16,
+    );
+}
+
 // TIM4 PWM
 
 type Tim4Pwm = hal::timer::PwmHz<
@@ -244,6 +268,7 @@ struct HardwareImplementation {
     can_tx_buf: ConstGenericRingBuffer<bxcan::Frame, 10>,
     adc_result_vbat: f32,
     adc_result_tpcb: f32,
+    tim3_pwm: Tim3Pwm,
     tim4_pwm: Tim4Pwm,
     group1oc_pin: Group1OCPin,
     group2oc_pin: Group2OCPin,
@@ -365,6 +390,8 @@ impl HardwareInterface for HardwareImplementation {
             PwmOutput::LCUR1 => { set_lcur1(value, &mut self.tim4_pwm) }
             PwmOutput::SPWM1 => { set_spwm1(value, &mut self.tim4_pwm) }
             PwmOutput::SPWM2 => { set_spwm2(value, &mut self.tim4_pwm) }
+            PwmOutput::LPWM2 => { set_lpwm2(value, &mut self.tim3_pwm) }
+            PwmOutput::LPWM3 => { set_lpwm3(value, &mut self.tim3_pwm) }
         }
     }
 }
@@ -495,6 +522,23 @@ mod rtic_app {
         init_logger();
 
         info!("-!- ipdmrust boot");
+
+        // TIM3 (PWM generation)
+
+        let lpwm2_ch: hal::timer::ChannelBuilder<hal::pac::TIM3, 0, false> =
+            hal::timer::Channel1::new(gpioc.pc6);
+        let lpwm3_ch: hal::timer::ChannelBuilder<hal::pac::TIM3, 1, false> =
+            hal::timer::Channel2::new(gpioc.pc7);
+
+        let mut tim3_pwm = cx
+            .device
+            .TIM3
+            .pwm_hz((lpwm2_ch, lpwm3_ch), 1000.Hz(), &clocks);
+
+        tim3_pwm.enable(hal::timer::Channel::C1);
+        tim3_pwm.enable(hal::timer::Channel::C2);
+        set_lpwm2(0.0, &mut tim3_pwm);
+        set_lpwm3(0.0, &mut tim3_pwm);
 
         // TIM4 (PWM generation)
 
@@ -635,6 +679,7 @@ mod rtic_app {
             can_tx_buf: ConstGenericRingBuffer::new(),
             adc_result_vbat: f32::NAN,
             adc_result_tpcb: f32::NAN,
+            tim3_pwm,
             tim4_pwm,
             group1oc_pin,
             group2oc_pin,

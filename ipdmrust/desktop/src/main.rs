@@ -77,6 +77,10 @@ impl HardwareInterface for HardwareImplementation {
         14.0
     }
 
+    fn get_digital_input(&mut self, input: DigitalInput) -> bool {
+        false
+    }
+
     fn set_digital_output(&mut self, output: DigitalOutput, value: bool) {
         if let Some(old_value) = self.digital_output_states.get(&output) {
             if value != *old_value {
@@ -86,6 +90,9 @@ impl HardwareInterface for HardwareImplementation {
             info!("set_digital_output(): {:?}: {:?}", output, value);
         }
         self.digital_output_states.insert(output, value);
+    }
+
+    fn set_pwm_output(&mut self, output: PwmOutput, value: f32) {
     }
 }
 

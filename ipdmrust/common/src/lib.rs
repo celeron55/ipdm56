@@ -56,7 +56,9 @@ pub enum PwmOutput {
     LCUR1,
     SPWM1,
     SPWM2,
-    // TODO: LPWM1, LPWM2, LPWM3
+    LPWM2,
+    LPWM3,
+    // TODO: LPWM1 (not supported in ipdmhw2.0 due to a hardware bug
 }
 
 pub trait HardwareInterface {
