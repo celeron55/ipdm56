@@ -61,15 +61,13 @@ enum ParameterId {
     OutlanderHeaterPowerPercent = 27,
     CruiseActive = 28,
     CruiseRequested = 29,
-    // TODO: Delete these and replace with max discharge current and max charge
-    //       current. These are redundant.
-    PermitDischarge = 30,
-    PermitCharge = 31,
-    HvacRequested = 32,
-    FocciCPPWM = 33,
-    ActivateEvse = 34,
-    BmsMaxChargeCurrent = 35,
-    BmsMaxDischargeCurrent = 36,
+    HvacRequested = 30,
+    FocciCPPWM = 31,
+    ActivateEvse = 32,
+    BmsMaxChargeCurrent = 33,
+    BmsMaxDischargeCurrent = 34,
+    CcsCurrent = 35,
+    ChargeComplete = 36,
 }
 
 static mut PARAMETERS: [Parameter<ParameterId>; 37] = [
@@ -460,32 +458,6 @@ static mut PARAMETERS: [Parameter<ParameterId>; 37] = [
         update_timestamp: 0,
     },
     Parameter {
-        id: ParameterId::PermitDischarge,
-        display_name: "Permit dischg.",
-        value: f32::NAN,
-        decimals: 0,
-        unit: "",
-        can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x100).unwrap()),
-            bits: CanBitSelection::Bit(1),
-            scale: 1.0,
-        }),
-        update_timestamp: 0,
-    },
-    Parameter {
-        id: ParameterId::PermitCharge,
-        display_name: "Permit charge",
-        value: f32::NAN,
-        decimals: 0,
-        unit: "",
-        can_map: Some(CanMap {
-            id: bxcan::Id::Standard(StandardId::new(0x100).unwrap()),
-            bits: CanBitSelection::Bit(0),
-            scale: 1.0,
-        }),
-        update_timestamp: 0,
-    },
-    Parameter {
         id: ParameterId::HvacRequested,
         display_name: "HVAC requested",
         value: f32::NAN,
@@ -506,7 +478,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 37] = [
     },
     Parameter {
         id: ParameterId::FocciCPPWM,
-        display_name: "CP duty",
+        display_name: "Focci CP PWM",
         value: f32::NAN,
         decimals: 0,
         unit: "%",
@@ -554,6 +526,28 @@ static mut PARAMETERS: [Parameter<ParameterId>; 37] = [
             }),
             scale: 0.1,
         }),
+        update_timestamp: 0,
+    },
+    Parameter {
+        id: ParameterId::CcsCurrent,
+        display_name: "CCS",
+        value: f32::NAN,
+        decimals: 0,
+        unit: "A",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x506).unwrap()),
+            bits: CanBitSelection::Uint8(5),
+            scale: 2.0,
+        }),
+        update_timestamp: 0,
+    },
+    Parameter {
+        id: ParameterId::ChargeComplete,
+        display_name: "ChargeComplete",
+        value: 0.0,
+        decimals: 0,
+        unit: "",
+        can_map: None,
         update_timestamp: 0,
     },
 ];
@@ -702,12 +696,25 @@ impl MainState {
     }
 
     fn update_charging(&mut self, hw: &mut dyn HardwareInterface) {
-        // TODO: Don't set activate_evse if the battery is known to be full from
-        //       the last time the system was woken up
+        let mut charge_current = 0.0;
+        if !get_parameter(ParameterId::CcsCurrent).value.is_nan() {
+            charge_current += get_parameter(ParameterId::CcsCurrent).value;
+        }
+        if !get_parameter(ParameterId::ObcDcc).value.is_nan() {
+            charge_current += get_parameter(ParameterId::ObcDcc).value;
+        }
+
+        if get_parameter(ParameterId::BatteryVMax).value >= 4.11 &&
+                charge_current < 2.0 {
+            get_parameter(ParameterId::ChargeComplete).set_value(1.0, hw.millis());
+        } else if get_parameter(ParameterId::BatteryVMax).value < 4.03 {
+            get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
+        }
 
         let activate_evse =
                 get_parameter(ParameterId::FocciCPPWM).value >= 8.0 &&
-                get_parameter(ParameterId::FocciCPPWM).value <= 96.0;
+                get_parameter(ParameterId::FocciCPPWM).value <= 96.0 &&
+                get_parameter(ParameterId::ChargeComplete).value < 0.5;
 
         get_parameter(ParameterId::ActivateEvse).set_value(
                 if activate_evse { 1.0 } else { 0.0 }, hw.millis());
@@ -721,7 +728,7 @@ impl MainState {
             !heating_needed ||
             get_parameter(ParameterId::HeaterT).value.is_nan() ||
             get_parameter(ParameterId::MainContactor).value < 0.5 ||
-            get_parameter(ParameterId::PermitDischarge).value < 0.5
+            get_parameter(ParameterId::BmsMaxDischargeCurrent).value < 50.0
         {
             0.0
         } else if get_parameter(ParameterId::HeaterT).value < 55.0 {
