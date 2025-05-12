@@ -824,8 +824,9 @@ impl MainState {
                 0
             };
             self.send_normal_frame(hw, 0x404, &[
-                0,
-                ac_obc_state,
+                0x00 |
+                    (1<<0) /* Foccci.enable */,
+                ac_obc_state /* Foccci.AcObcState */,
                 0, 0,
                 0, 0, 0, 0,
             ]);
