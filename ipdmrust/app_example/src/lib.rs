@@ -589,6 +589,7 @@ pub struct MainState {
     last_heater_update_ms: u64,
     request_wakeup_and_main_contactor: bool,
     request_heater_power_percent: f32,
+    ignition_last_on_ms: u64,
 }
 
 impl MainState {
@@ -605,6 +606,7 @@ impl MainState {
             last_heater_update_ms: 0,
             request_wakeup_and_main_contactor: false,
             request_heater_power_percent: 0.0,
+            ignition_last_on_ms: 0,
         }
     }
 
@@ -683,6 +685,10 @@ impl MainState {
         }
         if hw.get_digital_input(DigitalInput::Group4OC) {
             info!("-!- DigitalInput::Group4OC");
+        }
+
+        if hw.get_digital_input(DigitalInput::Ignition) {
+            self.ignition_last_on_ms = hw.millis();
         }
     }
 
@@ -781,14 +787,20 @@ impl MainState {
         // Update OBC/DCDC 12V supply
         // * When main contactor is closed, enable this (for DC/DC)
         // * Read CP value from Foccci and enable this based on that
-        // TODO: When ignition is on, enable this (for DC/DC and precharge)
-        // TODO: Do the same thing as on EV-Omega, which is to toggle this off
-        //       for 5 seconds when ignition key is turned off. That ensures
-        //       charging will start afterwards if the OBC is in a weird state,
-        //       into which it often likes to go.
-        hw.set_digital_output(ObcDcdc12VSupply,
-                get_parameter(ParameterId::MainContactor).value > 0.5 ||
-                get_parameter(ParameterId::ActivateEvse).value > 0.5);
+        // * Toggle this off for 5 seconds when ignition key is turned off. That
+        //   ensures charging will start afterwards if the OBC is in a weird
+        //   state, into which it often likes to go
+        hw.set_digital_output(ObcDcdc12VSupply, {
+            if self.last_millis - self.ignition_last_on_ms >= 1000 &&
+                    self.last_millis - self.ignition_last_on_ms <= 6000 &&
+                    get_parameter(ParameterId::ObcDcc).value <= 0.1 {
+                false
+            } else {
+                ignition_input ||
+                        get_parameter(ParameterId::MainContactor).value > 0.5 ||
+                        get_parameter(ParameterId::ActivateEvse).value > 0.5
+            }
+        });
 
         // Update DC/DC enable
         hw.set_digital_output(DcdcEnable,
