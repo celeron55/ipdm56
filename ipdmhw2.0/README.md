@@ -60,6 +60,11 @@ iPDM56 v2.0 fixing the board
       with an external 7.5A fuse. (a 10A fuse will allow 10A for too long for
       the MOSFETs to survive)
 
+- SPWM1 and SPWM2 aren't connected from the STM32 to their corresponding output
+  drivers due to net name mismatch (`SPWM1_LOGIC` vs. `SPWM1_CONTROL`)
+    - SPWM1: Jumper from STM32 pin 60 to U16 pin 2
+    - SPWM2: Jumper from STM32 pin 61 to U17 pin 2
+
 iPDM56 v2.0 flashing
 --------------------
 
