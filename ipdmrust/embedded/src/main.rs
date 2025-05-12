@@ -332,7 +332,7 @@ impl HardwareInterface for HardwareImplementation {
             DigitalInput::Group2OC => self.group2oc_pin.is_low(),
             DigitalInput::Group3OC => self.group3oc_pin.is_low(),
             DigitalInput::Group4OC => self.group4oc_pin.is_low(),
-            DigitalInput::Ignition => self.ign_input_pin.is_low(),
+            DigitalInput::Ignition => self.ign_input_pin.is_high(),
         }
     }
 
