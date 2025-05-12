@@ -704,10 +704,10 @@ impl MainState {
             charge_current += get_parameter(ParameterId::ObcDcc).value;
         }
 
-        if get_parameter(ParameterId::BatteryVMax).value >= 4.11 &&
+        if get_parameter(ParameterId::BatteryVMax).value >= 4.10 &&
                 charge_current < 2.0 {
             get_parameter(ParameterId::ChargeComplete).set_value(1.0, hw.millis());
-        } else if get_parameter(ParameterId::BatteryVMax).value < 4.03 {
+        } else if get_parameter(ParameterId::BatteryVMax).value < 4.04 {
             get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
         }
 
