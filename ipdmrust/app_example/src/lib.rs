@@ -859,6 +859,7 @@ impl MainState {
 
         {
             // Send AcObcState to Foccci so that it can enable EVSE state C
+            // TODO: Move this stuff into 0x200. This CAN frame isn't needed
             let ac_obc_state = if get_parameter(ParameterId::ActivateEvse).value > 0.5 {
                 2
             } else {
@@ -904,6 +905,12 @@ impl MainState {
                 (obc_Ax10 & 0xff) as u8,
                 0, 0, 0,
             ]);
+
+            if request_inverter_disable {
+                // For some reason inverter_controller isn't following the value
+                // in 0x200, so we send this also which it does follow
+                self.send_setting_frame(hw, 0x320, 1, 0, 1);
+            }
         }
     }
 
