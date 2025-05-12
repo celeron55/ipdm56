@@ -66,9 +66,10 @@ enum ParameterId {
     PermitDischarge = 30,
     PermitCharge = 31,
     HvacRequested = 32,
+    ControlPilotDutyPercent = 38,
 }
 
-static mut PARAMETERS: [Parameter<ParameterId>; 33] = [
+static mut PARAMETERS: [Parameter<ParameterId>; 34] = [
     Parameter {
         id: ParameterId::TicksMs,
         display_name: "Ticks",
@@ -500,6 +501,19 @@ static mut PARAMETERS: [Parameter<ParameterId>; 33] = [
         }),
         update_timestamp: 0,
     },
+    Parameter {
+        id: ParameterId::ControlPilotDutyPercent,
+        display_name: "CP duty",
+        value: f32::NAN,
+        decimals: 0,
+        unit: "%",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x506).unwrap()),
+            bits: CanBitSelection::Uint8(1),
+            scale: 1.0,
+        }),
+        update_timestamp: 0,
+    },
 ];
 
 fn get_parameters() -> &'static mut [Parameter<'static, ParameterId>] {
@@ -698,8 +712,10 @@ impl MainState {
         hw.set_digital_output(BrakeBooster, true);
 
         // Update CP PWM to OBC
-        // TODO: Get PWM value from Foccci
-        hw.set_pwm_output(CpPwmToObc, 0.16);
+        // (PWM value is received from Foccci)
+        hw.set_pwm_output(CpPwmToObc,
+                if get_parameter(ParameterId::ControlPilotDutyPercent).value.is_nan() { 0.00 }
+                else { get_parameter(ParameterId::ControlPilotDutyPercent).value * 0.01 });
 
         // TODO: Send outlander OBC control CAN messages
     }
