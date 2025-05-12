@@ -1108,6 +1108,8 @@ mod rtic_app {
             if let Some(frame) = can_tx_buf.dequeue() {
                 trace!("-!- CAN1 >> {:?} {:?}", frame.id(), frame.data());
                 let _ = can1.transmit(&frame);
+                short_busywait(); // NOTE: HACK: For some reson messages get
+                                  // dropped from a long TX queue without this
             }
         });
     }
