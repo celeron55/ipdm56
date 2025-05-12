@@ -718,6 +718,9 @@ impl MainState {
         // TODO: Get ignition key state and control things based on it
         // TODO: Also follow ParameterId::HvacRequested
 
+        // Require main contactor so that DC/DC can be operating
+        let allow_solenoids = get_parameter(ParameterId::MainContactor).value > 0.5;
+
         if hw.millis() - self.last_solenoid_update_ms > 10000 {
             self.last_solenoid_update_ms = hw.millis();
 
@@ -726,17 +729,18 @@ impl MainState {
                     get_parameter(ParameterId::BatteryTMax).value < 25.0;
             let cool_battery = get_parameter(ParameterId::BatteryTMin).value > 23.0 &&
                     get_parameter(ParameterId::BatteryTMax).value > 30.0;
-            hw.set_digital_output(BatteryNeutralSolenoid, !cool_battery && !heat_battery);
-            hw.set_digital_output(BatteryHeatSolenoid, heat_battery);
+            hw.set_digital_output(BatteryNeutralSolenoid,
+                    allow_solenoids && !cool_battery && !heat_battery);
+            hw.set_digital_output(BatteryHeatSolenoid,
+                    allow_solenoids && heat_battery);
 
             // Update cooling fan
             // TODO: Trigger on inverter, motor and OBC temperature also
-            hw.set_digital_output(CoolingFan,
-                    get_parameter(ParameterId::BatteryTMax).value > 35.0 &&
-                    get_parameter(ParameterId::MainContactor).value > 0.5);
+            hw.set_digital_output(CoolingFan, allow_solenoids &&
+                    get_parameter(ParameterId::BatteryTMax).value > 35.0);
 
             // Update heating loop pump
-            hw.set_digital_output(HeatLoopPump,
+            hw.set_digital_output(HeatLoopPump, allow_solenoids &&
                     get_parameter(ParameterId::OutlanderHeaterHeating).value > 0.5 ||
                     get_parameter(ParameterId::OutlanderHeaterPowerPercent).value > 0.5 ||
                     get_parameter(ParameterId::OutlanderHeaterT).value > 30.0);
@@ -745,10 +749,9 @@ impl MainState {
         }
 
         // Update OBC/DCDC 12V supply
-        // TODO: When main contactor is closed, enable this (for DC/DC)
+        // * When main contactor is closed, enable this (for DC/DC)
+        // * Read CP value from Foccci and enable this based on that
         // TODO: When ignition is on, enable this (for DC/DC and precharge)
-        // TODO: Read CP value from Foccci and enable this based on that when
-        //       ignition is off
         hw.set_digital_output(ObcDcdc12VSupply,
                 get_parameter(ParameterId::MainContactor).value > 0.5 ||
                 get_parameter(ParameterId::ActivateEvse).value > 0.5);
