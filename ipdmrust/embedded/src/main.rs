@@ -175,26 +175,35 @@ unsafe impl bxcan::FilterOwner for CAN1 {
     const NUM_FILTER_BANKS: u8 = 28;
 }
 
-// TIM4 PWM: LCD backlight PWM and PWMOUT2
+// TIM4 PWM
 
 type Tim4Pwm = hal::timer::PwmHz<
     hal::pac::TIM4,
     (
-        hal::timer::ChannelBuilder<hal::pac::TIM4, 0, false>,
-        hal::timer::ChannelBuilder<hal::pac::TIM4, 3, false>,
+        hal::timer::ChannelBuilder<hal::pac::TIM4, 0, false>, // LCUR1
+        hal::timer::ChannelBuilder<hal::pac::TIM4, 1, false>, // SPWM1
+        hal::timer::ChannelBuilder<hal::pac::TIM4, 2, false>, // SPWM2
+        //hal::timer::ChannelBuilder<hal::pac::TIM4, 3, false>, // Will be LWPM1 in next version
     ),
 >;
 
-fn set_lcd_backlight(pwm: f32, pwm_timer: &mut Tim4Pwm) {
+fn set_lcur1(pwm: f32, pwm_timer: &mut Tim4Pwm) {
     pwm_timer.set_duty(
         hal::timer::Channel::C1,
         (pwm_timer.get_max_duty() as f32 * pwm) as u16,
     );
 }
 
-fn set_pwmout2(pwm: f32, pwm_timer: &mut Tim4Pwm) {
+fn set_spwm1(pwm: f32, pwm_timer: &mut Tim4Pwm) {
     pwm_timer.set_duty(
-        hal::timer::Channel::C4,
+        hal::timer::Channel::C2,
+        (pwm_timer.get_max_duty() as f32 * pwm) as u16,
+    );
+}
+
+fn set_spwm2(pwm: f32, pwm_timer: &mut Tim4Pwm) {
+    pwm_timer.set_duty(
+        hal::timer::Channel::C3,
         (pwm_timer.get_max_duty() as f32 * pwm) as u16,
     );
 }
@@ -235,6 +244,7 @@ struct HardwareImplementation {
     can_tx_buf: ConstGenericRingBuffer<bxcan::Frame, 10>,
     adc_result_vbat: f32,
     adc_result_tpcb: f32,
+    tim4_pwm: Tim4Pwm,
     group1oc_pin: Group1OCPin,
     group2oc_pin: Group2OCPin,
     group3oc_pin: Group3OCPin,
@@ -349,6 +359,14 @@ impl HardwareInterface for HardwareImplementation {
             // TODO: M* pins
         }
     }
+
+    fn set_pwm_output(&mut self, output: PwmOutput, value: f32) {
+        match output {
+            PwmOutput::LCUR1 => { set_lcur1(value, &mut self.tim4_pwm) }
+            PwmOutput::SPWM1 => { set_spwm1(value, &mut self.tim4_pwm) }
+            PwmOutput::SPWM2 => { set_spwm2(value, &mut self.tim4_pwm) }
+        }
+    }
 }
 
 // Panic output and input methods
@@ -396,7 +414,6 @@ mod rtic_app {
         // Digital input pins
         // Output pins
         // (See HardwareImplementation)
-        // PWM output timers
         // Other
         hw: HardwareImplementation,
     }
@@ -478,6 +495,27 @@ mod rtic_app {
         init_logger();
 
         info!("-!- ipdmrust boot");
+
+        // TIM4 (PWM generation)
+
+        let lcur1_ch: hal::timer::ChannelBuilder<hal::pac::TIM4, 0, false> =
+            hal::timer::Channel1::new(gpiod.pd12);
+        let spwm1_ch: hal::timer::ChannelBuilder<hal::pac::TIM4, 1, false> =
+            hal::timer::Channel2::new(gpiod.pd13);
+        let spwm2_ch: hal::timer::ChannelBuilder<hal::pac::TIM4, 2, false> =
+            hal::timer::Channel3::new(gpiod.pd14);
+
+        let mut tim4_pwm = cx
+            .device
+            .TIM4
+            .pwm_hz((lcur1_ch, spwm1_ch, spwm2_ch), 1000.Hz(), &clocks);
+
+        tim4_pwm.enable(hal::timer::Channel::C1);
+        tim4_pwm.enable(hal::timer::Channel::C2);
+        tim4_pwm.enable(hal::timer::Channel::C3);
+        set_lcur1(0.0, &mut tim4_pwm);
+        set_spwm1(0.0, &mut tim4_pwm);
+        set_spwm2(0.0, &mut tim4_pwm);
 
         // USART1 (TX=PA9, RX=PA10): TTL serial on programming header. We
         // provide our serial console here, and also on native USB. Note that
@@ -597,6 +635,7 @@ mod rtic_app {
             can_tx_buf: ConstGenericRingBuffer::new(),
             adc_result_vbat: f32::NAN,
             adc_result_tpcb: f32::NAN,
+            tim4_pwm,
             group1oc_pin,
             group2oc_pin,
             group3oc_pin,

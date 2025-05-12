@@ -26,6 +26,8 @@ const BatteryHeatSolenoid: DigitalOutput = DigitalOutput::LOUT2;
 const CoolingFan: DigitalOutput = DigitalOutput::LOUT4;
 const HeatLoopPump: DigitalOutput = DigitalOutput::LOUT5;
 
+const CpPwmToObc: PwmOutput = PwmOutput::SPWM1;
+
 #[repr(usize)]
 #[derive(IntEnum, Debug, Clone, Copy)]
 enum ParameterId {
@@ -695,7 +697,9 @@ impl MainState {
         // TODO: Control based on ignition key state
         hw.set_digital_output(BrakeBooster, true);
 
-        // TODO: Update CP PWM to OBC (SPWM1)
+        // Update CP PWM to OBC
+        // TODO: Get PWM value from Foccci
+        hw.set_pwm_output(CpPwmToObc, 0.16);
 
         // TODO: Send outlander OBC control CAN messages
     }

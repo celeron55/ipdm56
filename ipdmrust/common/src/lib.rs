@@ -51,6 +51,14 @@ pub enum DigitalOutput {
     // TODO: M* pins
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PwmOutput {
+    LCUR1,
+    SPWM1,
+    SPWM2,
+    // TODO: LPWM1, LPWM2, LPWM3
+}
+
 pub trait HardwareInterface {
     fn millis(&mut self) -> u64;
 
@@ -65,7 +73,7 @@ pub trait HardwareInterface {
 
     fn set_digital_output(&mut self, output: DigitalOutput, value: bool);
 
-    // TODO: Add PWM outputs (LPWM1, LPWM2, LPWM3, LCUR1, SPWM1, SPWM2)
+    fn set_pwm_output(&mut self, output: PwmOutput, value: f32);
 }
 
 // Parameter definitions
