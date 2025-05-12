@@ -66,10 +66,13 @@ enum ParameterId {
     PermitDischarge = 30,
     PermitCharge = 31,
     HvacRequested = 32,
-    ControlPilotDutyPercent = 38,
+    ControlPilotDutyPercent = 33,
+    ActivateEvse = 34,
+    BmsMaxChargeCurrent = 35,
+    BmsMaxDischargeCurrent = 36,
 }
 
-static mut PARAMETERS: [Parameter<ParameterId>; 34] = [
+static mut PARAMETERS: [Parameter<ParameterId>; 37] = [
     Parameter {
         id: ParameterId::TicksMs,
         display_name: "Ticks",
@@ -514,6 +517,45 @@ static mut PARAMETERS: [Parameter<ParameterId>; 34] = [
         }),
         update_timestamp: 0,
     },
+    Parameter {
+        id: ParameterId::ActivateEvse,
+        display_name: "Activate EVSE",
+        value: 0.0,
+        decimals: 0,
+        unit: "",
+        can_map: None,
+        update_timestamp: 0,
+    },
+    Parameter {
+        id: ParameterId::BmsMaxChargeCurrent,
+        display_name: "Max charge",
+        value: f32::NAN,
+        decimals: 1,
+        unit: "A",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x102).unwrap()),
+            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
+                (((data[2] as u16) << 8) | data[3] as u16) as f32
+            }),
+            scale: 0.1,
+        }),
+        update_timestamp: 0,
+    },
+    Parameter {
+        id: ParameterId::BmsMaxDischargeCurrent,
+        display_name: "Max discharge",
+        value: f32::NAN,
+        decimals: 1,
+        unit: "A",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x102).unwrap()),
+            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
+                (((data[4] as u16) << 8) | data[5] as u16) as f32
+            }),
+            scale: 0.1,
+        }),
+        update_timestamp: 0,
+    },
 ];
 
 fn get_parameters() -> &'static mut [Parameter<'static, ParameterId>] {
@@ -586,6 +628,8 @@ impl MainState {
 
         self.update_outputs(hw);
 
+        self.update_charging(hw);
+
         if hw.millis() - self.last_heater_update_ms >= 2000 {
             self.last_heater_update_ms = hw.millis();
             self.update_heater(hw);
@@ -627,6 +671,15 @@ impl MainState {
         get_parameter(ParameterId::AuxVoltage).set_value(hw.get_analog_input(AnalogInput::AuxVoltage), hw.millis());
 
         self.timeout_parameters(hw);
+    }
+
+    fn update_charging(&mut self, hw: &mut dyn HardwareInterface) {
+        let activate_evse =
+                get_parameter(ParameterId::ControlPilotDutyPercent).value >= 8.0 &&
+                get_parameter(ParameterId::ControlPilotDutyPercent).value <= 96.0;
+
+        get_parameter(ParameterId::ActivateEvse).set_value(
+                if activate_evse { 1.0 } else { 0.0 }, hw.millis());
     }
 
     fn update_heater(&mut self, hw: &mut dyn HardwareInterface) {
@@ -738,7 +791,7 @@ impl MainState {
         }
 
         {
-            let charge_voltage_setpoint: u16 = 299;
+            let charge_voltage_setpoint: u16 = 302;
 
             // TODO: Make maximum AC charge current configurable (ui8d already
             //       is capable of sending requests to change this)
@@ -747,7 +800,8 @@ impl MainState {
             //       maximum
             let charge_current_request_Ax10 =
                 if get_parameter(ParameterId::MainContactor).value > 0.5 &&
-                        get_parameter(ParameterId::AllowedChargePower).value > 1.5 {
+                        get_parameter(ParameterId::BmsMaxChargeCurrent).value > 10.0 &&
+                        get_parameter(ParameterId::ActivateEvse).value > 0.5 {
                     100
                 } else {
                     0
@@ -763,7 +817,18 @@ impl MainState {
         }
 
         {
-            // TODO: Send AcObcState to Foccci so that it can enable EVSE state C
+            // Send AcObcState to Foccci so that it can enable EVSE state C
+            let ac_obc_state = if get_parameter(ParameterId::ActivateEvse).value > 0.5 {
+                2
+            } else {
+                0
+            };
+            self.send_normal_frame(hw, 0x404, &[
+                0,
+                ac_obc_state,
+                0, 0,
+                0, 0, 0, 0,
+            ]);
         }
 
         // TODO: Request main contactor based on ControlPilotDutyPercent
@@ -774,11 +839,7 @@ impl MainState {
         if get_parameter(ParameterId::MainContactor).value > 0.5 {
             // Outlander HV status message (for heater and OBC)
             // 10...30ms is fine for this (EV-Omega uses 30ms)
-            // TODO: EVSE control
-            let activate_evse = false;
-            /*if activate_evse {
-                data[2] |= 0xb6; // 0xb6 = Activate EVSE (OBC)
-            }*/
+            let activate_evse = get_parameter(ParameterId::ActivateEvse).value > 0.5;
             self.send_normal_frame(hw, 0x285, &[
                 0x00, 0x00,
                 0x14 | if activate_evse { 0xb6 } else { 0 }, // 0xb6 = Activate EVSE (OBC)
