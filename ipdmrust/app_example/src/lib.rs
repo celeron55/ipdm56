@@ -880,6 +880,7 @@ impl MainState {
             //   and heating
             // * Request the inverter to be disabled while charging
             // * Provide a DC bus voltage reading to Foccci
+            // * Provide an OBC DC current reading to old SIM900 unit
 
             let request_main_contactor: bool = self.request_wakeup_and_main_contactor;
 
@@ -890,13 +891,18 @@ impl MainState {
             let dc_link_voltage_Vx10: u16 =
                     (get_parameter(ParameterId::ObcDcv).value * 10.0) as u16;
 
+            let obc_Ax10: u16 =
+                    (get_parameter(ParameterId::ObcDcc).value * 10.0) as u16;
+
             self.send_normal_frame(hw, 0x200, &[
                 0x00 |
                     if request_main_contactor { (1<<0) } else { 0 } |
                     if request_inverter_disable { (1<<2) } else { 0 },
                 (dc_link_voltage_Vx10 >> 8) as u8,
                 (dc_link_voltage_Vx10 & 0xff) as u8,
-                0, 0, 0, 0, 0,
+                (obc_Ax10 >> 8) as u8,
+                (obc_Ax10 & 0xff) as u8,
+                0, 0, 0,
             ]);
         }
     }
