@@ -25,6 +25,7 @@ pub enum DigitalInput {
     Group2OC, // HOUT4..6
     Group3OC, // HOUT7..10
     Group4OC, // HOUT11,HOUT12,WAKEUP
+    Ignition,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

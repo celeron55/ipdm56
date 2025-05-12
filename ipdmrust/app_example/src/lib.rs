@@ -683,7 +683,11 @@ impl MainState {
     }
 
     fn update_heater(&mut self, hw: &mut dyn HardwareInterface) {
+        let heating_needed = hw.get_digital_input(DigitalInput::Ignition) ||
+                get_parameter(ParameterId::HvacRequested).value > 0.5;
+
         self.request_heater_power_percent = if
+            !heating_needed ||
             get_parameter(ParameterId::HeaterT).value.is_nan() ||
             get_parameter(ParameterId::MainContactor).value < 0.5 ||
             get_parameter(ParameterId::PermitDischarge).value < 0.5
@@ -715,8 +719,7 @@ impl MainState {
     }
 
     fn update_outputs(&mut self, hw: &mut dyn HardwareInterface) {
-        // TODO: Get ignition key state and control things based on it
-        // TODO: Also follow ParameterId::HvacRequested
+        let ignition_input = hw.get_digital_input(DigitalInput::Ignition);
 
         // Require main contactor so that DC/DC can be operating
         let allow_solenoids = get_parameter(ParameterId::MainContactor).value > 0.5;
@@ -752,6 +755,10 @@ impl MainState {
         // * When main contactor is closed, enable this (for DC/DC)
         // * Read CP value from Foccci and enable this based on that
         // TODO: When ignition is on, enable this (for DC/DC and precharge)
+        // TODO: Do the same thing as on EV-Omega, which is to toggle this off
+        //       for 5 seconds when ignition key is turned off. That ensures
+        //       charging will start afterwards if the OBC is in a weird state,
+        //       into which it often likes to go.
         hw.set_digital_output(ObcDcdc12VSupply,
                 get_parameter(ParameterId::MainContactor).value > 0.5 ||
                 get_parameter(ParameterId::ActivateEvse).value > 0.5);
@@ -765,8 +772,7 @@ impl MainState {
                 get_parameter(ParameterId::MainContactor).value > 0.5);
 
         // Update brake booster
-        // TODO: Control based on ignition key state
-        hw.set_digital_output(BrakeBooster, true);
+        hw.set_digital_output(BrakeBooster, ignition_input);
 
         // Update CP PWM to OBC
         // (PWM value is received from Foccci)

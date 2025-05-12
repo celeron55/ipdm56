@@ -241,6 +241,8 @@ type Group2OCPin = gpio::Pin<'D', 9, gpio::Input>;
 type Group3OCPin = gpio::Pin<'C', 8, gpio::Input>;
 type Group4OCPin = gpio::Pin<'C', 9, gpio::Input>;
 
+type IgnInputPin = gpio::Pin<'D', 15, gpio::Input>;
+
 type Boot0ControlPin = gpio::Pin<'B', 8, gpio::Output<gpio::PushPull>>;
 type WakeupOutputPin = gpio::Pin<'A', 15, gpio::Output<gpio::PushPull>>;
 type HOUT1Pin = gpio::Pin<'E', 0, gpio::Output<gpio::PushPull>>;
@@ -274,6 +276,7 @@ struct HardwareImplementation {
     group2oc_pin: Group2OCPin,
     group3oc_pin: Group3OCPin,
     group4oc_pin: Group4OCPin,
+    ign_input_pin: IgnInputPin,
     hout1_pin: HOUT1Pin,
     hout2_pin: HOUT2Pin,
     hout3_pin: HOUT3Pin,
@@ -329,6 +332,7 @@ impl HardwareInterface for HardwareImplementation {
             DigitalInput::Group2OC => self.group2oc_pin.is_low(),
             DigitalInput::Group3OC => self.group3oc_pin.is_low(),
             DigitalInput::Group4OC => self.group4oc_pin.is_low(),
+            DigitalInput::Ignition => self.ign_input_pin.is_low(),
         }
     }
 
@@ -482,6 +486,8 @@ mod rtic_app {
         let mut group2oc_pin = gpiod.pd9.into_input();
         let mut group3oc_pin = gpioc.pc8.into_input();
         let mut group4oc_pin = gpioc.pc9.into_input();
+
+        let mut ign_input_pin = gpiod.pd15.into_input();
 
         // Output pins
 
@@ -685,6 +691,7 @@ mod rtic_app {
             group2oc_pin,
             group3oc_pin,
             group4oc_pin,
+            ign_input_pin,
             hout1_pin,
             hout2_pin,
             hout3_pin,
