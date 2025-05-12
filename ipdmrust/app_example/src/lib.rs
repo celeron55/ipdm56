@@ -66,7 +66,7 @@ enum ParameterId {
     PermitDischarge = 30,
     PermitCharge = 31,
     HvacRequested = 32,
-    ControlPilotDutyPercent = 33,
+    FocciCPPWM = 33,
     ActivateEvse = 34,
     BmsMaxChargeCurrent = 35,
     BmsMaxDischargeCurrent = 36,
@@ -330,7 +330,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 37] = [
     },
     Parameter {
         id: ParameterId::ObcDcv,
-        display_name: "OBC V DC",
+        display_name: "OBC DC V",
         value: f32::NAN,
         decimals: 0,
         unit: "V",
@@ -343,7 +343,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 37] = [
     },
     Parameter {
         id: ParameterId::ObcDcc,
-        display_name: "OBC A DC",
+        display_name: "OBC DC A",
         value: f32::NAN,
         decimals: 1,
         unit: "A",
@@ -356,7 +356,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 37] = [
     },
     Parameter {
         id: ParameterId::AcVoltage,
-        display_name: "AC voltage",
+        display_name: "OBC AC V",
         value: f32::NAN,
         decimals: 0,
         unit: "V",
@@ -505,7 +505,7 @@ static mut PARAMETERS: [Parameter<ParameterId>; 37] = [
         update_timestamp: 0,
     },
     Parameter {
-        id: ParameterId::ControlPilotDutyPercent,
+        id: ParameterId::FocciCPPWM,
         display_name: "CP duty",
         value: f32::NAN,
         decimals: 0,
@@ -675,8 +675,8 @@ impl MainState {
 
     fn update_charging(&mut self, hw: &mut dyn HardwareInterface) {
         let activate_evse =
-                get_parameter(ParameterId::ControlPilotDutyPercent).value >= 8.0 &&
-                get_parameter(ParameterId::ControlPilotDutyPercent).value <= 96.0;
+                get_parameter(ParameterId::FocciCPPWM).value >= 8.0 &&
+                get_parameter(ParameterId::FocciCPPWM).value <= 96.0;
 
         get_parameter(ParameterId::ActivateEvse).set_value(
                 if activate_evse { 1.0 } else { 0.0 }, hw.millis());
@@ -750,7 +750,8 @@ impl MainState {
         // TODO: Read CP value from Foccci and enable this based on that when
         //       ignition is off
         hw.set_digital_output(ObcDcdc12VSupply,
-                get_parameter(ParameterId::MainContactor).value > 0.5);
+                get_parameter(ParameterId::MainContactor).value > 0.5 ||
+                get_parameter(ParameterId::ActivateEvse).value > 0.5);
 
         // Update DC/DC enable
         hw.set_digital_output(DcdcEnable,
@@ -767,8 +768,8 @@ impl MainState {
         // Update CP PWM to OBC
         // (PWM value is received from Foccci)
         hw.set_pwm_output(CpPwmToObc,
-                if get_parameter(ParameterId::ControlPilotDutyPercent).value.is_nan() { 0.00 }
-                else { get_parameter(ParameterId::ControlPilotDutyPercent).value * 0.01 });
+                if get_parameter(ParameterId::FocciCPPWM).value.is_nan() { 0.00 }
+                else { get_parameter(ParameterId::FocciCPPWM).value * 0.01 });
 
         // TODO: Send outlander OBC control CAN messages
     }
@@ -795,14 +796,18 @@ impl MainState {
 
             // TODO: Make maximum AC charge current configurable (ui8d already
             //       is capable of sending requests to change this)
+            let user_current_request_ACA: f32 = 10.0;
 
-            // TODO: Control properly based on the BMS's request and configured
-            //       maximum
-            let charge_current_request_Ax10 =
+            let ac_v = get_parameter(ParameterId::AcVoltage).value;
+            let dc_v = get_parameter(ParameterId::ObcDcv).value;
+            let dc_current_request_Ax10: u8 =
                 if get_parameter(ParameterId::MainContactor).value > 0.5 &&
                         get_parameter(ParameterId::BmsMaxChargeCurrent).value > 10.0 &&
                         get_parameter(ParameterId::ActivateEvse).value > 0.5 {
-                    100
+                    let ac_request_DCA = ac_v / dc_v * user_current_request_ACA;
+                    let obc_limit_DCA = 12.0;
+                    let bms_limit_DCA = get_parameter(ParameterId::BmsMaxChargeCurrent).value;
+                    (ac_request_DCA.min(obc_limit_DCA).min(bms_limit_DCA).max(0.0) * 10.0) as u8
                 } else {
                     0
                 };
@@ -811,7 +816,7 @@ impl MainState {
             self.send_normal_frame(hw, 0x286, &[
                 (charge_voltage_setpoint_Vx10 >> 8) as u8,
                 (charge_voltage_setpoint_Vx10 & 0xff) as u8,
-                charge_current_request_Ax10, // 0.1A / bit
+                dc_current_request_Ax10, // DC current, 0.1A / bit
                 0, 0, 0, 0, 0
             ]);
         }
@@ -832,7 +837,7 @@ impl MainState {
             ]);
         }
 
-        // TODO: Request main contactor based on ControlPilotDutyPercent
+        // TODO: Request main contactor based on FocciCPPWM
         // TODO: Request main contactor based on HvacRequested
     }
 
