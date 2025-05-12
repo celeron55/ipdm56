@@ -791,7 +791,7 @@ impl MainState {
         }
 
         {
-            let charge_voltage_setpoint: u16 = 302;
+            let charge_voltage_setpoint_Vx10: u16 = 3020;
 
             // TODO: Make maximum AC charge current configurable (ui8d already
             //       is capable of sending requests to change this)
@@ -809,8 +809,8 @@ impl MainState {
 
             // Outlander OBC control
             self.send_normal_frame(hw, 0x286, &[
-                (charge_voltage_setpoint >> 8) as u8,
-                (charge_voltage_setpoint & 0xff) as u8,
+                (charge_voltage_setpoint_Vx10 >> 8) as u8,
+                (charge_voltage_setpoint_Vx10 & 0xff) as u8,
                 charge_current_request_Ax10, // 0.1A / bit
                 0, 0, 0, 0, 0
             ]);
