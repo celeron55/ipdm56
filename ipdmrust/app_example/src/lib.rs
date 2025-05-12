@@ -593,6 +593,7 @@ pub struct MainState {
     last_can_30ms: u64,
     last_can_200ms: u64,
     last_heater_update_ms: u64,
+    request_wakeup_and_main_contactor: bool,
     request_heater_power_percent: f32,
 }
 
@@ -608,6 +609,7 @@ impl MainState {
             last_can_30ms: 0,
             last_can_200ms: 0,
             last_heater_update_ms: 0,
+            request_wakeup_and_main_contactor: false,
             request_heater_power_percent: 0.0,
         }
     }
@@ -625,6 +627,8 @@ impl MainState {
         self.update_parameters(hw);
 
         self.read_inputs(hw);
+
+        self.manage_power(hw);
 
         self.update_outputs(hw);
 
@@ -673,7 +677,34 @@ impl MainState {
         self.timeout_parameters(hw);
     }
 
+    fn read_inputs(&mut self, hw: &mut dyn HardwareInterface) {
+        if hw.get_digital_input(DigitalInput::Group1OC) {
+            info!("-!- DigitalInput::Group1OC");
+        }
+        if hw.get_digital_input(DigitalInput::Group2OC) {
+            info!("-!- DigitalInput::Group2OC");
+        }
+        if hw.get_digital_input(DigitalInput::Group3OC) {
+            info!("-!- DigitalInput::Group3OC");
+        }
+        if hw.get_digital_input(DigitalInput::Group4OC) {
+            info!("-!- DigitalInput::Group4OC");
+        }
+    }
+
+    fn manage_power(&mut self, hw: &mut dyn HardwareInterface) {
+        let ignition_input = hw.get_digital_input(DigitalInput::Ignition);
+
+        self.request_wakeup_and_main_contactor =
+                ignition_input ||
+                get_parameter(ParameterId::ActivateEvse).value > 0.5 ||
+                get_parameter(ParameterId::HvacRequested).value > 0.5;
+    }
+
     fn update_charging(&mut self, hw: &mut dyn HardwareInterface) {
+        // TODO: Don't set activate_evse if the battery is known to be full from
+        //       the last time the system was woken up
+
         let activate_evse =
                 get_parameter(ParameterId::FocciCPPWM).value >= 8.0 &&
                 get_parameter(ParameterId::FocciCPPWM).value <= 96.0;
@@ -703,21 +734,6 @@ impl MainState {
         info!("request_heater_power_percent = {:?}", self.request_heater_power_percent);
     }
 
-    fn read_inputs(&mut self, hw: &mut dyn HardwareInterface) {
-        if hw.get_digital_input(DigitalInput::Group1OC) {
-            info!("-!- DigitalInput::Group1OC");
-        }
-        if hw.get_digital_input(DigitalInput::Group2OC) {
-            info!("-!- DigitalInput::Group2OC");
-        }
-        if hw.get_digital_input(DigitalInput::Group3OC) {
-            info!("-!- DigitalInput::Group3OC");
-        }
-        if hw.get_digital_input(DigitalInput::Group4OC) {
-            info!("-!- DigitalInput::Group4OC");
-        }
-    }
-
     fn update_outputs(&mut self, hw: &mut dyn HardwareInterface) {
         let ignition_input = hw.get_digital_input(DigitalInput::Ignition);
 
@@ -726,6 +742,10 @@ impl MainState {
 
         if hw.millis() - self.last_solenoid_update_ms > 10000 {
             self.last_solenoid_update_ms = hw.millis();
+
+            // Wakeup line
+            hw.set_digital_output(DigitalOutput::Wakeup,
+                    self.request_wakeup_and_main_contactor);
 
             // Update battery solenoids
             let heat_battery = get_parameter(ParameterId::BatteryTMin).value < 3.0 &&
@@ -779,11 +799,11 @@ impl MainState {
         hw.set_pwm_output(CpPwmToObc,
                 if get_parameter(ParameterId::FocciCPPWM).value.is_nan() { 0.00 }
                 else { get_parameter(ParameterId::FocciCPPWM).value * 0.01 });
-
-        // TODO: Send outlander OBC control CAN messages
     }
 
     fn send_can_200ms(&mut self, hw: &mut dyn HardwareInterface) {
+        let ignition_input = hw.get_digital_input(DigitalInput::Ignition);
+
         {
             // Outlander heater control
             let requested_power_command = if self.request_heater_power_percent > 70.0 {
@@ -846,8 +866,32 @@ impl MainState {
             ]);
         }
 
-        // TODO: Request main contactor based on FocciCPPWM
-        // TODO: Request main contactor based on HvacRequested
+        {
+            // This is an old PDM message, which we have inherited
+            // We use this to:
+            // * Request main contactor from the BMS for charging
+            //   and heating
+            // * Request the inverter to be disabled while charging
+            // * Provide a DC bus voltage reading to Foccci
+
+            let request_main_contactor: bool = self.request_wakeup_and_main_contactor;
+
+            // TODO: Use PlugPresent instead of CP
+            let request_inverter_disable: bool =
+                    get_parameter(ParameterId::FocciCPPWM).value >= 1.0;
+
+            let dc_link_voltage_Vx10: u16 =
+                    (get_parameter(ParameterId::ObcDcv).value * 10.0) as u16;
+
+            self.send_normal_frame(hw, 0x200, &[
+                0x00 |
+                    if request_main_contactor { (1<<0) } else { 0 } |
+                    if request_inverter_disable { (1<<2) } else { 0 },
+                (dc_link_voltage_Vx10 >> 8) as u8,
+                (dc_link_voltage_Vx10 & 0xff) as u8,
+                0, 0, 0, 0, 0,
+            ]);
+        }
     }
 
     fn send_can_30ms(&mut self, hw: &mut dyn HardwareInterface) {
