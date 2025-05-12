@@ -865,10 +865,15 @@ impl MainState {
 
     fn send_normal_frame(&mut self, hw: &mut dyn HardwareInterface,
             frame_id: u16, data: &[u8]) {
-        hw.send_can(bxcan::Frame::new_data(
-            bxcan::StandardId::new(frame_id).unwrap(),
-            bxcan::Data::new(data).unwrap()
-        ));
+        if let Some(frame_data) = bxcan::Data::new(data) {
+            hw.send_can(bxcan::Frame::new_data(
+                bxcan::StandardId::new(frame_id).unwrap(),
+                frame_data
+            ));
+        } else {
+            warn!("-!- send_normal_frame(): Invalid data for frame {:?}: {:?}",
+                    frame_id, data);
+        }
     }
 
     fn send_setting_frame(&mut self, hw: &mut dyn HardwareInterface,
