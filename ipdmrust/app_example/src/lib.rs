@@ -737,8 +737,37 @@ impl MainState {
             ]);
         }
 
+        {
+            let charge_voltage_setpoint: u16 = 299;
 
-        // TODO: Request main contactor based on ParameterId::HvacRequested
+            // TODO: Make maximum AC charge current configurable (ui8d already
+            //       is capable of sending requests to change this)
+
+            // TODO: Control properly based on the BMS's request and configured
+            //       maximum
+            let charge_current_request_Ax10 =
+                if get_parameter(ParameterId::MainContactor).value > 0.5 &&
+                        get_parameter(ParameterId::AllowedChargePower).value > 1.5 {
+                    100
+                } else {
+                    0
+                };
+
+            // Outlander OBC control
+            self.send_normal_frame(hw, 0x286, &[
+                (charge_voltage_setpoint >> 8) as u8,
+                (charge_voltage_setpoint & 0xff) as u8,
+                charge_current_request_Ax10, // 0.1A / bit
+                0, 0, 0, 0, 0
+            ]);
+        }
+
+        {
+            // TODO: Send AcObcState to Foccci so that it can enable EVSE state C
+        }
+
+        // TODO: Request main contactor based on ControlPilotDutyPercent
+        // TODO: Request main contactor based on HvacRequested
     }
 
     fn send_can_30ms(&mut self, hw: &mut dyn HardwareInterface) {
