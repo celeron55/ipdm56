@@ -952,7 +952,6 @@ impl MainState {
             let dc_v = get_parameter(ParameterId::ObcDcv).value;
             let dc_current_request_Ax10: u8 =
                 if get_parameter(ParameterId::MainContactor).value > 0.5 &&
-                        get_parameter(ParameterId::BmsMaxChargeCurrent).value > 10.0 &&
                         get_parameter(ParameterId::ActivateEvse).value > 0.5 {
                     let ac_request_DCA = ac_v / dc_v * user_current_request_ACA;
                     let obc_limit_DCA = 12.0;
