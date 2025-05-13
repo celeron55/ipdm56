@@ -62,7 +62,7 @@ enum ParameterId {
     CruiseActive = 28,
     CruiseRequested = 29,
     HvacRequested = 30,
-    FocciCPPWM = 31,
+    FoccciCPPWM = 31,
     ActivateEvse = 32,
     BmsMaxChargeCurrent = 33,
     BmsMaxDischargeCurrent = 34,
@@ -72,9 +72,10 @@ enum ParameterId {
     Precharging = 38,
     DcdcStatus = 39,
     BmsChargeCompleteVoltageSetting = 40,
+    FoccciPlugPresent = 41,
 }
 
-static mut PARAMETERS: [Parameter<ParameterId>; 41] = [
+static mut PARAMETERS: [Parameter<ParameterId>; 42] = [
     Parameter {
         id: ParameterId::TicksMs,
         display_name: "Ticks",
@@ -481,8 +482,8 @@ static mut PARAMETERS: [Parameter<ParameterId>; 41] = [
         update_timestamp: 0,
     },
     Parameter {
-        id: ParameterId::FocciCPPWM,
-        display_name: "Focci CP PWM",
+        id: ParameterId::FoccciCPPWM,
+        display_name: "Foccci CP PWM",
         value: f32::NAN,
         decimals: 0,
         unit: "%",
@@ -600,6 +601,19 @@ static mut PARAMETERS: [Parameter<ParameterId>; 41] = [
             bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
                 (((data[0] as u16) << 8) | data[1] as u16) as f32
             }),
+            scale: 1.0,
+        }),
+        update_timestamp: 0,
+    },
+    Parameter {
+        id: ParameterId::FoccciPlugPresent,
+        display_name: "FoccciPlugPresent",
+        value: f32::NAN,
+        decimals: 0,
+        unit: "",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x506).unwrap()),
+            bits: CanBitSelection::Bit(2),
             scale: 1.0,
         }),
         update_timestamp: 0,
@@ -797,8 +811,8 @@ impl MainState {
         }
 
         let activate_evse =
-                get_parameter(ParameterId::FocciCPPWM).value >= 8.0 &&
-                get_parameter(ParameterId::FocciCPPWM).value <= 96.0 &&
+                get_parameter(ParameterId::FoccciCPPWM).value >= 8.0 &&
+                get_parameter(ParameterId::FoccciCPPWM).value <= 96.0 &&
                 get_parameter(ParameterId::ChargeComplete).value < 0.5;
 
         get_parameter(ParameterId::ActivateEvse).set_value(
@@ -906,8 +920,8 @@ impl MainState {
         // Update CP PWM to OBC
         // (PWM value is received from Foccci)
         hw.set_pwm_output(CpPwmToObc,
-                if get_parameter(ParameterId::FocciCPPWM).value.is_nan() { 0.00 }
-                else { get_parameter(ParameterId::FocciCPPWM).value * 0.01 });
+                if get_parameter(ParameterId::FoccciCPPWM).value.is_nan() { 0.00 }
+                else { get_parameter(ParameterId::FoccciCPPWM).value * 0.01 });
     }
 
     fn send_can_500ms(&mut self, hw: &mut dyn HardwareInterface) {
@@ -974,24 +988,6 @@ impl MainState {
         }
 
         {
-            // Send AcObcState to Foccci so that it can enable EVSE state C
-            // TODO: Configure Foccci to read thse from 0x200 instead
-            // TODO: Remove this CAN frame
-            let ac_obc_state = if get_parameter(ParameterId::ActivateEvse).value > 0.5 {
-                2
-            } else {
-                0
-            };
-            self.send_normal_frame(hw, 0x404, &[
-                0x00 |
-                    (1<<0) /* Foccci.enable (old) */,
-                ac_obc_state /* Foccci.AcObcState (old) */,
-                0, 0,
-                0, 0, 0, 0,
-            ]);
-        }
-
-        {
             // This is an old PDM message, which we have inherited
             // We use this to:
             // * Request main contactor from the BMS for charging
@@ -999,12 +995,13 @@ impl MainState {
             // * Request the inverter to be disabled while charging
             // * Provide a DC bus voltage reading to Foccci
             // * Provide an OBC DC current reading to old SIM900 unit
+            // * Send AcObcState and enable parameters to Foccci so that it can
+            //   enable EVSE state C for AC charging
 
             let request_main_contactor: bool = self.request_wakeup_and_main_contactor;
 
-            // TODO: Use PlugPresent instead of CP
             let request_inverter_disable: bool =
-                    get_parameter(ParameterId::FocciCPPWM).value >= 1.0;
+                    get_parameter(ParameterId::FoccciPlugPresent).value >= 0.5;
 
             let dc_link_voltage_Vx10: u16 =
                     (get_parameter(ParameterId::ObcDcv).value * 10.0) as u16;
