@@ -937,7 +937,7 @@ impl MainState {
             self.send_normal_frame(hw, 0x200, &[
                 0x00 |
                     if request_main_contactor { (1<<0) } else { 0 } |
-                    if request_inverter_disable { (1<<2) } else { 0 },
+                    if request_inverter_disable { (1<<3) } else { 0 },
                 (dc_link_voltage_Vx10 >> 8) as u8,
                 (dc_link_voltage_Vx10 & 0xff) as u8,
                 (obc_Ax10 >> 8) as u8,
