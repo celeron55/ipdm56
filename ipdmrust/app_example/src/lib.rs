@@ -955,6 +955,9 @@ impl MainState {
                         get_parameter(ParameterId::ActivateEvse).value > 0.5 {
                     let ac_request_DCA = ac_v / dc_v * user_current_request_ACA;
                     let obc_limit_DCA = 12.0;
+                    // TODO: If the heater is operating, allow that much extra
+                    //       charging current so that it's possible to heat the
+                    //       battery using AC power
                     let bms_limit_DCA = get_parameter(ParameterId::BmsMaxChargeCurrent).value;
                     (ac_request_DCA.min(obc_limit_DCA).min(bms_limit_DCA).max(0.0) * 10.0) as u8
                 } else {
