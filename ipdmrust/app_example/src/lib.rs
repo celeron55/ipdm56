@@ -71,9 +71,10 @@ enum ParameterId {
     LastSeenSoc= 37,
     Precharging = 38,
     DcdcStatus = 39,
+    BmsChargeCompleteVoltageSetting = 40,
 }
 
-static mut PARAMETERS: [Parameter<ParameterId>; 40] = [
+static mut PARAMETERS: [Parameter<ParameterId>; 41] = [
     Parameter {
         id: ParameterId::TicksMs,
         display_name: "Ticks",
@@ -588,6 +589,21 @@ static mut PARAMETERS: [Parameter<ParameterId>; 40] = [
         }),
         update_timestamp: 0,
     },
+    Parameter {
+        id: ParameterId::BmsChargeCompleteVoltageSetting,
+        display_name: "BmsChgCompV",
+        value: f32::NAN,
+        decimals: 0,
+        unit: "mV",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x104).unwrap()),
+            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
+                (((data[0] as u16) << 8) | data[1] as u16) as f32
+            }),
+            scale: 1.0,
+        }),
+        update_timestamp: 0,
+    },
 ];
 
 fn get_parameters() -> &'static mut [Parameter<'static, ParameterId>] {
@@ -624,6 +640,7 @@ pub struct MainState {
     last_solenoid_update_ms: u64,
     last_can_30ms: u64,
     last_can_200ms: u64,
+    last_can_500ms: u64,
     last_heater_update_ms: u64,
     request_wakeup_and_main_contactor: bool,
     request_heater_power_percent: f32,
@@ -641,6 +658,7 @@ impl MainState {
             last_solenoid_update_ms: 0,
             last_can_30ms: 0,
             last_can_200ms: 0,
+            last_can_500ms: 0,
             last_heater_update_ms: 0,
             request_wakeup_and_main_contactor: false,
             request_heater_power_percent: 0.0,
@@ -671,6 +689,11 @@ impl MainState {
         if hw.millis() - self.last_heater_update_ms >= 2000 {
             self.last_heater_update_ms = hw.millis();
             self.update_heater(hw);
+        }
+
+        if hw.millis() - self.last_can_500ms >= 500 {
+            self.last_can_500ms = hw.millis();
+            self.send_can_500ms(hw);
         }
 
         if hw.millis() - self.last_can_200ms >= 200 {
@@ -885,6 +908,18 @@ impl MainState {
         hw.set_pwm_output(CpPwmToObc,
                 if get_parameter(ParameterId::FocciCPPWM).value.is_nan() { 0.00 }
                 else { get_parameter(ParameterId::FocciCPPWM).value * 0.01 });
+    }
+
+    fn send_can_500ms(&mut self, hw: &mut dyn HardwareInterface) {
+        {
+            // Send charge completion voltage setting to BMS
+            let old_value: u16 = get_parameter(
+                    ParameterId::BmsChargeCompleteVoltageSetting).value as u16;
+            let new_value: u16 = 4120;
+            if old_value != new_value {
+                self.send_setting_frame(hw, 0x120, 0, old_value, new_value);
+            }
+        }
     }
 
     fn send_can_200ms(&mut self, hw: &mut dyn HardwareInterface) {
