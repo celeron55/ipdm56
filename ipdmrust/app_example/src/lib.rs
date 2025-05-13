@@ -898,7 +898,8 @@ impl MainState {
 
         {
             // Send AcObcState to Foccci so that it can enable EVSE state C
-            // TODO: Move this stuff into 0x200. This CAN frame isn't needed
+            // TODO: Configure Foccci to read thse from 0x200 instead
+            // TODO: Remove this CAN frame
             let ac_obc_state = if get_parameter(ParameterId::ActivateEvse).value > 0.5 {
                 2
             } else {
@@ -906,8 +907,8 @@ impl MainState {
             };
             self.send_normal_frame(hw, 0x404, &[
                 0x00 |
-                    (1<<0) /* Foccci.enable */,
-                ac_obc_state /* Foccci.AcObcState */,
+                    (1<<0) /* Foccci.enable (old) */,
+                ac_obc_state /* Foccci.AcObcState (old) */,
                 0, 0,
                 0, 0, 0, 0,
             ]);
@@ -934,15 +935,34 @@ impl MainState {
             let obc_Ax10: u16 =
                     (get_parameter(ParameterId::ObcDcc).value * 10.0) as u16;
 
+            let ac_obc_state = if get_parameter(ParameterId::ActivateEvse).value > 0.5 {
+                2
+            } else {
+                0
+            };
+
+            let group1oc = hw.get_digital_input(DigitalInput::Group1OC);
+            let group2oc = hw.get_digital_input(DigitalInput::Group2OC);
+            let group3oc = hw.get_digital_input(DigitalInput::Group3OC);
+            let group4oc = hw.get_digital_input(DigitalInput::Group4OC);
+
             self.send_normal_frame(hw, 0x200, &[
                 0x00 |
                     if request_main_contactor { (1<<0) } else { 0 } |
-                    if request_inverter_disable { (1<<3) } else { 0 },
+                    if request_inverter_disable { (1<<3) } else { 0 } |
+                    if ignition_input { (1<<6) } else { 0 } |
+                    (1<<7) /* Foccci.enable (new) */,
                 (dc_link_voltage_Vx10 >> 8) as u8,
                 (dc_link_voltage_Vx10 & 0xff) as u8,
                 (obc_Ax10 >> 8) as u8,
                 (obc_Ax10 & 0xff) as u8,
-                0, 0, 0,
+                0,
+                ac_obc_state /* Foccci.AcObcState (new) */,
+                0x00 |
+                    if group1oc { (1<<0) } else { 0 } |
+                    if group2oc { (1<<1) } else { 0 } |
+                    if group3oc { (1<<2) } else { 0 } |
+                    if group4oc { (1<<3) } else { 0 },
             ]);
 
             if request_inverter_disable {
