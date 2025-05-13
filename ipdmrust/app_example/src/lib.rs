@@ -70,9 +70,10 @@ enum ParameterId {
     ChargeComplete = 36,
     LastSeenSoc= 37,
     Precharging = 38,
+    DcdcStatus = 39,
 }
 
-static mut PARAMETERS: [Parameter<ParameterId>; 39] = [
+static mut PARAMETERS: [Parameter<ParameterId>; 40] = [
     Parameter {
         id: ParameterId::TicksMs,
         display_name: "Ticks",
@@ -574,6 +575,19 @@ static mut PARAMETERS: [Parameter<ParameterId>; 39] = [
         }),
         update_timestamp: 0,
     },
+    Parameter {
+        id: ParameterId::DcdcStatus,
+        display_name: "DCDC status",
+        value: f32::NAN,
+        decimals: 0,
+        unit: "",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x377).unwrap()),
+            bits: CanBitSelection::Uint8(7),
+            scale: 1.0,
+        }),
+        update_timestamp: 0,
+    },
 ];
 
 fn get_parameters() -> &'static mut [Parameter<'static, ParameterId>] {
@@ -826,18 +840,26 @@ impl MainState {
             info!("MainContactor: {:?}", get_parameter(ParameterId::MainContactor).value);
         }
 
-        // Update OBC/DCDC 12V supply. Enable this when:
-        // * The BMS is precharging (it needs the DC link voltage measurement)
-        // * When main contactor is closed (for DC/DC)
-        // * Based on the CP value from Foccci
-        // Toggle this off for 5 seconds when ignition key is turned off. That
-        // ensures charging will start afterwards if the OBC is in a weird
-        // state, into which it often likes to go
+        // Update OBC/DCDC 12V supply
+        // * Enable this when:
+        //   * The BMS is precharging (it needs the DC link voltage measurement)
+        //   * When main contactor is closed (for DC/DC)
+        //   * Based on the CP value from Foccci
+        // * Toggle this off for 5 seconds when ignition key is turned off. That
+        //   ensures charging will start afterwards if the OBC is in a weird
+        //   state, into which it often likes to go
+        // * Also toggle this for 5 seconds every 30 minutes if the DC/DC is not
+        //   running while the main contactor is closed
         hw.set_digital_output(ObcDcdc12VSupply, {
             if self.last_millis > 60000 &&
                     self.last_millis - self.ignition_last_on_ms >= 1000 &&
                     self.last_millis - self.ignition_last_on_ms <= 6000 &&
                     get_parameter(ParameterId::ObcDcc).value <= 0.1 {
+                false
+            } else if self.last_millis > 60000 &&
+                    self.last_millis % (1000 * 60 * 30) < (1000 * 5) &&
+                    get_parameter(ParameterId::AuxVoltage).value <= 12.5 &&
+                    get_parameter(ParameterId::DcdcStatus).value != 0x22 as f32 {
                 false
             } else {
                 ignition_input ||
