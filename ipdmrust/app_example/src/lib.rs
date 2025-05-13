@@ -68,9 +68,10 @@ enum ParameterId {
     BmsMaxDischargeCurrent = 34,
     CcsCurrent = 35,
     ChargeComplete = 36,
+    LastSeenSoc= 37,
 }
 
-static mut PARAMETERS: [Parameter<ParameterId>; 37] = [
+static mut PARAMETERS: [Parameter<ParameterId>; 38] = [
     Parameter {
         id: ParameterId::TicksMs,
         display_name: "Ticks",
@@ -550,6 +551,15 @@ static mut PARAMETERS: [Parameter<ParameterId>; 37] = [
         can_map: None,
         update_timestamp: 0,
     },
+    Parameter {
+        id: ParameterId::LastSeenSoc,
+        display_name: "SoC (last seen)",
+        value: f32::NAN,
+        decimals: 0,
+        unit: "%",
+        can_map: None,
+        update_timestamp: 0,
+    },
 ];
 
 fn get_parameters() -> &'static mut [Parameter<'static, ParameterId>] {
@@ -670,6 +680,13 @@ impl MainState {
         get_parameter(ParameterId::TicksMs).set_value(hw.millis() as f32, hw.millis());
         get_parameter(ParameterId::AuxVoltage).set_value(hw.get_analog_input(AnalogInput::AuxVoltage), hw.millis());
 
+        if !get_parameter(ParameterId::Soc).value.is_nan() &&
+                get_parameter(ParameterId::Soc).value >= 0.5 &&
+                get_parameter(ParameterId::Soc).value <= 100.5 {
+            get_parameter(ParameterId::LastSeenSoc).set_value(
+                    get_parameter(ParameterId::Soc).value, hw.millis());
+        }
+
         self.timeout_parameters(hw);
     }
 
@@ -695,10 +712,20 @@ impl MainState {
     fn manage_power(&mut self, hw: &mut dyn HardwareInterface) {
         let ignition_input = hw.get_digital_input(DigitalInput::Ignition);
 
+        let enough_soc_for_remote_operations =
+                get_parameter(ParameterId::LastSeenSoc).value.is_nan() ||
+                        get_parameter(ParameterId::LastSeenSoc).value >= 10.0;
+
+        // This is to charge the 12V battery and send data
+        let daily_wakeup = hw.millis() % (1000 * 60 * 60 * 24) < (1000 * 60 * 30);
+
         self.request_wakeup_and_main_contactor =
                 ignition_input ||
                 get_parameter(ParameterId::ActivateEvse).value > 0.5 ||
-                get_parameter(ParameterId::HvacRequested).value > 0.5;
+                (enough_soc_for_remote_operations && (
+                    get_parameter(ParameterId::HvacRequested).value > 0.5 ||
+                    daily_wakeup
+                ));
     }
 
     fn update_charging(&mut self, hw: &mut dyn HardwareInterface) {
