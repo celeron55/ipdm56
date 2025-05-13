@@ -69,9 +69,10 @@ enum ParameterId {
     CcsCurrent = 35,
     ChargeComplete = 36,
     LastSeenSoc= 37,
+    Precharging = 38,
 }
 
-static mut PARAMETERS: [Parameter<ParameterId>; 38] = [
+static mut PARAMETERS: [Parameter<ParameterId>; 39] = [
     Parameter {
         id: ParameterId::TicksMs,
         display_name: "Ticks",
@@ -560,6 +561,19 @@ static mut PARAMETERS: [Parameter<ParameterId>; 38] = [
         can_map: None,
         update_timestamp: 0,
     },
+    Parameter {
+        id: ParameterId::Precharging,
+        display_name: "Precharging",
+        value: f32::NAN,
+        decimals: 0,
+        unit: "",
+        can_map: Some(CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x100).unwrap()),
+            bits: CanBitSelection::Bit(5),
+            scale: 1.0,
+        }),
+        update_timestamp: 0,
+    },
 ];
 
 fn get_parameters() -> &'static mut [Parameter<'static, ParameterId>] {
@@ -717,7 +731,8 @@ impl MainState {
                         get_parameter(ParameterId::LastSeenSoc).value >= 10.0;
 
         // This is to charge the 12V battery and send data
-        let daily_wakeup = hw.millis() % (1000 * 60 * 60 * 24) < (1000 * 60 * 30);
+        let daily_wakeup = hw.millis() > (1000 * 60 * 60 * 12) &&
+                hw.millis() % (1000 * 60 * 60 * 24) < (1000 * 60 * 30);
 
         self.request_wakeup_and_main_contactor =
                 ignition_input ||
@@ -811,19 +826,22 @@ impl MainState {
             info!("MainContactor: {:?}", get_parameter(ParameterId::MainContactor).value);
         }
 
-        // Update OBC/DCDC 12V supply
-        // * When main contactor is closed, enable this (for DC/DC)
-        // * Read CP value from Foccci and enable this based on that
-        // * Toggle this off for 5 seconds when ignition key is turned off. That
-        //   ensures charging will start afterwards if the OBC is in a weird
-        //   state, into which it often likes to go
+        // Update OBC/DCDC 12V supply. Enable this when:
+        // * The BMS is precharging (it needs the DC link voltage measurement)
+        // * When main contactor is closed (for DC/DC)
+        // * Based on the CP value from Foccci
+        // Toggle this off for 5 seconds when ignition key is turned off. That
+        // ensures charging will start afterwards if the OBC is in a weird
+        // state, into which it often likes to go
         hw.set_digital_output(ObcDcdc12VSupply, {
-            if self.last_millis - self.ignition_last_on_ms >= 1000 &&
+            if self.last_millis > 60000 &&
+                    self.last_millis - self.ignition_last_on_ms >= 1000 &&
                     self.last_millis - self.ignition_last_on_ms <= 6000 &&
                     get_parameter(ParameterId::ObcDcc).value <= 0.1 {
                 false
             } else {
                 ignition_input ||
+                        get_parameter(ParameterId::Precharging).value > 0.5 ||
                         get_parameter(ParameterId::MainContactor).value > 0.5 ||
                         get_parameter(ParameterId::ActivateEvse).value > 0.5
             }
