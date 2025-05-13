@@ -419,7 +419,7 @@ mod rtic_app {
         mainboard_rxbuf: ConstGenericRingBuffer<u8, MAINBOARD_RX_BUF_SIZE>,
         mainboard_txbuf: ConstGenericRingBuffer<u8, MAINBOARD_TX_BUF_SIZE>,
         can1: bxcan::Can<CAN1>,
-        can_rx_buf: ConstGenericRingBuffer<bxcan::Frame, 10>,
+        can_rx_buf: ConstGenericRingBuffer<bxcan::Frame, 50>,
         can_tx_buf: ConstGenericRingBuffer<bxcan::Frame, 10>,
         adc_result_vbat: f32,
         adc_result_tpcb: f32,
