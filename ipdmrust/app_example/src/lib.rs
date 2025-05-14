@@ -198,12 +198,23 @@ impl MainState {
             get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
         }
 
+        // ActivateEvse applies to both DC and AC charging
         let activate_evse =
-                get_parameter(ParameterId::FoccciCPPWM).value >= 8.0 &&
+                get_parameter(ParameterId::FoccciCPPWM).value >= 1.0 &&
                 get_parameter(ParameterId::FoccciCPPWM).value <= 96.0 &&
                 get_parameter(ParameterId::ChargeComplete).value < 0.5;
 
         get_parameter(ParameterId::ActivateEvse).set_value(
+                if activate_evse { 1.0 } else { 0.0 }, hw.millis());
+
+        // ActivateObc applies only to AC charging and ends up instructing
+        // Foccci into AC charging mode
+        let activate_obc =
+                get_parameter(ParameterId::FoccciCPPWM).value >= 8.0 &&
+                get_parameter(ParameterId::FoccciCPPWM).value <= 96.0 &&
+                get_parameter(ParameterId::ChargeComplete).value < 0.5;
+
+        get_parameter(ParameterId::ActivateObc).set_value(
                 if activate_evse { 1.0 } else { 0.0 }, hw.millis());
     }
 
@@ -397,7 +408,7 @@ impl MainState {
             let obc_Ax10: u16 =
                     (get_parameter(ParameterId::ObcDcc).value * 10.0) as u16;
 
-            let ac_obc_state = if get_parameter(ParameterId::ActivateEvse).value > 0.5 {
+            let ac_obc_state = if get_parameter(ParameterId::ActivateObc).value > 0.5 {
                 2
             } else {
                 0
@@ -439,7 +450,7 @@ impl MainState {
         if get_parameter(ParameterId::MainContactor).value > 0.5 {
             // Outlander HV status message (for heater and OBC)
             // 10...30ms is fine for this (EV-Omega uses 30ms)
-            let activate_evse = get_parameter(ParameterId::ActivateEvse).value > 0.5;
+            let activate_evse = get_parameter(ParameterId::ActivateObc).value > 0.5;
             self.send_normal_frame(hw, 0x285, &[
                 0x00, 0x00,
                 0x14 | if activate_evse { 0xb6 } else { 0 }, // 0xb6 = Activate EVSE (OBC)

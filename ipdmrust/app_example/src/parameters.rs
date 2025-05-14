@@ -262,6 +262,10 @@ define_parameters! {
         display_name: "Activate EVSE",
         unit: "",
     },
+    ActivateObc {
+        display_name: "Activate OBC",
+        unit: "",
+    },
     BmsMaxChargeCurrent {
         display_name: "Max charge",
         decimals: 1,
