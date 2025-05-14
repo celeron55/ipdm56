@@ -131,6 +131,7 @@ impl MainState {
     fn update_parameters(&mut self, hw: &mut dyn HardwareInterface) {
         get_parameter(ParameterId::TicksMs).set_value(hw.millis() as f32, hw.millis());
         get_parameter(ParameterId::AuxVoltage).set_value(hw.get_analog_input(AnalogInput::AuxVoltage), hw.millis());
+        get_parameter(ParameterId::PcbT).set_value(hw.get_analog_input(AnalogInput::PcbT), hw.millis());
 
         if !get_parameter(ParameterId::Soc).value.is_nan() &&
                 get_parameter(ParameterId::Soc).value >= 0.5 &&
@@ -417,7 +418,7 @@ impl MainState {
                 (dc_link_voltage_Vx10 & 0xff) as u8,
                 (obc_Ax10 >> 8) as u8,
                 (obc_Ax10 & 0xff) as u8,
-                0,
+                get_parameter(ParameterId::PcbT).value as u8,
                 ac_obc_state /* Foccci.AcObcState (new) */,
                 0x00 |
                     if group1oc { (1<<0) } else { 0 } |

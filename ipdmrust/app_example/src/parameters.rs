@@ -62,35 +62,6 @@ define_parameters! {
             scale: 100.0 / 255.0,
         },
     },
-    RangeKm {
-        display_name: "Range",
-        unit: "km",
-    },
-    AllowedChargePower {
-        display_name: "Chg allow",
-        unit: "kW",
-    },
-    TripKm {
-        display_name: "Trip",
-        unit: "km",
-    },
-    TripConsumption {
-        display_name: "Trip",
-        unit: "Wh/km",
-    },
-    RecentKm {
-        display_name: "Recent",
-        unit: "km",
-    },
-    RecentConsumption {
-        display_name: "Recent",
-        unit: "Wh/km",
-    },
-    HvacCountdown {
-        display_name: "HvacCountdown",
-        decimals: 1,
-        unit: "s",
-    },
     HeaterT {
         display_name: "Heater T",
         unit: "degC",
@@ -136,8 +107,8 @@ define_parameters! {
             scale: 1.0,
         },
     },
-    CabinT {
-        display_name: "CabinT",
+    PcbT {
+        display_name: "PcbT",
         decimals: 1,
         unit: "degC",
     },
@@ -325,6 +296,7 @@ define_parameters! {
         },
     },
     ChargeComplete {
+        // This is internally generated, not the one provided by the BMS
         display_name: "ChargeComplete",
         unit: "",
     },
