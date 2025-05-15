@@ -1,6 +1,8 @@
 iPDM56 v2.0
 ===========
 
+![iPDM56 v2.0 connector pinout](iPDM56v2.0_connector_pinout_light.png)
+
 iPDM56 v2.0 fixing the board
 ----------------------------
 
