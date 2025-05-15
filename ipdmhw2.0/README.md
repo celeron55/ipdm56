@@ -3,6 +3,38 @@ iPDM56 v2.0
 
 ![iPDM56 v2.0 connector pinout](iPDM56v2.0_connector_pinout_light.png)
 
+iPDM56 v2.0 flashing
+--------------------
+
+The board can be flashed and debugged by using SWD, which is available on the
+EXT2 connector.
+
+The board is designed to be flashed by using the ROM bootloader. You can read
+about the behavior of the STM32 ROM bootloader e.g. in the STM32 application
+note AN2606.
+
+The ROM bootloder is reached by pulling the `EXT_RESET_N` line to ground for
+about 3 seconds, until LED6 lights up, and then released. This resets the STM32
+into the ROM bootloader.
+
+The ROM bootloader is exited by pulling the `EXT_RESET_N` line to ground for
+a short time (less than 1 second). This resets the STM32 into running the
+program from flash.
+
+The ROM bootloader supports these alternative flashing options:
+- USB
+    - Supported by e.g. dfu-util
+- RS232
+    - Supported by e.g. stm32flasher
+    - The ui8d v2.0 display and telematics board can act as a convenient
+      RS232 converter with a physical reset button for the `EXT_RESET_N` line
+        - Note that currently doing this is quite flaky. I am not sure what's
+          required to get stm32flasher to be happy, but if you spam stm32flasher
+          while doing the long press `EXT_RESET_N` sequences, with any luck, it
+          will succeed within a couple of attempts.
+- CAN
+    - To enable CAN flashing, bridge JP3001. This enables CAN flashing via CAN2.
+
 iPDM56 v2.0 fixing the board
 ----------------------------
 
@@ -62,40 +94,13 @@ iPDM56 v2.0 fixing the board
       with an external 7.5A fuse. (a 10A fuse will allow 10A for too long for
       the MOSFETs to survive)
 
-- SPWM1 and SPWM2 aren't connected from the STM32 to their corresponding output
-  drivers due to net name mismatch (`SPWM1_LOGIC` vs. `SPWM1_CONTROL`)
+6. SPWM1 and SPWM2 aren't connected from the STM32 to their corresponding output
+   drivers due to net name mismatch (`SPWM1_LOGIC` vs. `SPWM1_CONTROL`)
     - SPWM1: Jumper from STM32 pin 60 to U16 pin 2
     - SPWM2: Jumper from STM32 pin 61 to U17 pin 2
 
-iPDM56 v2.0 flashing
---------------------
+Photo of a partially fixed board. You don't need to apply all bodges to make the
+board useful for a given use case:
 
-The board can be flashed and debugged by using SWD, which is available on the
-EXT2 connector.
-
-The board is designed to be flashed by using the ROM bootloader. You can read
-about the behavior of the STM32 ROM bootloader e.g. in the STM32 application
-note AN2606.
-
-The ROM bootloder is reached by pulling the `EXT_RESET_N` line to ground for
-about 3 seconds, until LED6 lights up, and then released. This resets the STM32
-into the ROM bootloader.
-
-The ROM bootloader is exited by pulling the `EXT_RESET_N` line to ground for
-a short time (less than 1 second). This resets the STM32 into running the
-program from flash.
-
-The ROM bootloader supports these alternative flashing options:
-- USB
-    - Supported by e.g. dfu-util
-- RS232
-    - Supported by e.g. stm32flasher
-    - The ui8d v2.0 display and telematics board can act as a convenient
-      RS232 converter with a physical reset button for the `EXT_RESET_N` line
-        - Note that currently doing this is quite flaky. I am not sure what's
-          required to get stm32flasher to be happy, but if you spam stm32flasher
-          while doing the long press `EXT_RESET_N` sequences, with any luck, it
-          will succeed within a couple of attempts.
-- CAN
-    - To enable CAN flashing, bridge JP3001. This enables CAN flashing via CAN2.
+![iPDM56v2.0 example bodges](iPDM56v2.0_photo_example_bodges.jpg)
 
