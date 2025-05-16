@@ -64,9 +64,7 @@ $ cargo run --release
 
 Monitoring using USB serial
 ---------------------------
-Pressing a key after running the command starts USB logging
 $ picocom --baud 115200 -r -l -c -e x /dev/ttyACM0
-$ while true; do picocom --baud 115200 -r -l -c -e x /dev/ttyACM0; sleep 1; done
 
 Debugging on physical hardware
 ------------------------------
