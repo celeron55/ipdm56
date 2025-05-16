@@ -233,6 +233,15 @@ impl MainState {
                     get_parameter(ParameterId::CabinT).value < 28.0
                 );
 
+        let target_temperature = {
+            if get_parameter(ParameterId::CabinT).value.is_nan() ||
+                    get_parameter(ParameterId::CabinT).value < 10.0 {
+                60.0
+            } else {
+                60.0 - (get_parameter(ParameterId::CabinT).value - 10.0) * 1.6
+            }
+        };
+
         self.request_heater_power_percent = if
             !heating_needed ||
             get_parameter(ParameterId::HeaterT).value.is_nan() ||
@@ -240,9 +249,9 @@ impl MainState {
             get_parameter(ParameterId::BmsMaxDischargeCurrent).value < 50.0
         {
             0.0
-        } else if get_parameter(ParameterId::HeaterT).value < 55.0 {
+        } else if get_parameter(ParameterId::HeaterT).value < target_temperature - 5.0 {
             100.0
-        } else if get_parameter(ParameterId::HeaterT).value < 60.0 {
+        } else if get_parameter(ParameterId::HeaterT).value < target_temperature {
             50.0
         } else {
             0.0
