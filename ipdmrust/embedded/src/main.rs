@@ -243,6 +243,14 @@ type Group4OCPin = gpio::Pin<'C', 9, gpio::Input>;
 
 type IgnInputPin = gpio::Pin<'D', 15, gpio::Input>;
 
+type M7Pin = gpio::Pin<'C', 13, gpio::Input>;
+type M8Pin = gpio::Pin<'A', 8, gpio::Input>;
+type M9Pin = gpio::Pin<'E', 7, gpio::Input>;
+type M10Pin = gpio::Pin<'E', 8, gpio::Input>;
+type M11Pin = gpio::Pin<'E', 9, gpio::Input>;
+type M12Pin = gpio::Pin<'B', 3, gpio::Input>;
+type M13Pin = gpio::Pin<'B', 4, gpio::Input>;
+
 type Boot0ControlPin = gpio::Pin<'B', 8, gpio::Output<gpio::PushPull>>;
 type WakeupOutputPin = gpio::Pin<'A', 15, gpio::Output<gpio::PushPull>>;
 type HOUT1Pin = gpio::Pin<'E', 0, gpio::Output<gpio::PushPull>>;
@@ -270,6 +278,17 @@ struct HardwareImplementation {
     can_tx_buf: ConstGenericRingBuffer<bxcan::Frame, 10>,
     adc_result_vbat: f32,
     adc_result_tpcb: f32,
+    adc_result_current1: f32,
+    adc_result_current2: f32,
+    adc_result_current3: f32,
+    adc_result_current4: f32,
+    adc_result_currentL: f32,
+    adc_result_m1: f32,
+    adc_result_m2: f32,
+    adc_result_m3: f32,
+    adc_result_m4: f32,
+    adc_result_m5: f32,
+    adc_result_m6: f32,
     tim3_pwm: Tim3Pwm,
     tim4_pwm: Tim4Pwm,
     group1oc_pin: Group1OCPin,
@@ -277,6 +296,13 @@ struct HardwareImplementation {
     group3oc_pin: Group3OCPin,
     group4oc_pin: Group4OCPin,
     ign_input_pin: IgnInputPin,
+    m7_pin: M7Pin,
+    m8_pin: M8Pin,
+    m9_pin: M9Pin,
+    m10_pin: M10Pin,
+    m11_pin: M11Pin,
+    m12_pin: M12Pin,
+    m13_pin: M13Pin,
     hout1_pin: HOUT1Pin,
     hout2_pin: HOUT2Pin,
     hout3_pin: HOUT3Pin,
@@ -322,7 +348,17 @@ impl HardwareInterface for HardwareImplementation {
         match input {
             AnalogInput::AuxVoltage => self.adc_result_vbat,
             AnalogInput::PcbT => self.adc_result_tpcb,
-            _ => f32::NAN,
+            AnalogInput::Current1 => self.adc_result_current1,
+            AnalogInput::Current2 => self.adc_result_current2,
+            AnalogInput::Current3 => self.adc_result_current3,
+            AnalogInput::Current4 => self.adc_result_current4,
+            AnalogInput::CurrentL => self.adc_result_currentL,
+            AnalogInput::M1 => self.adc_result_m1,
+            AnalogInput::M2 => self.adc_result_m2,
+            AnalogInput::M3 => self.adc_result_m3,
+            AnalogInput::M4 => self.adc_result_m4,
+            AnalogInput::M5 => self.adc_result_m5,
+            AnalogInput::M6 => self.adc_result_m6,
         }
     }
 
@@ -333,6 +369,13 @@ impl HardwareInterface for HardwareImplementation {
             DigitalInput::Group3OC => self.group3oc_pin.is_low(),
             DigitalInput::Group4OC => self.group4oc_pin.is_low(),
             DigitalInput::Ignition => self.ign_input_pin.is_high(),
+            DigitalInput::M7 => self.m7_pin.is_high(),
+            DigitalInput::M8 => self.m8_pin.is_high(),
+            DigitalInput::M9 => self.m9_pin.is_high(),
+            DigitalInput::M10 => self.m10_pin.is_high(),
+            DigitalInput::M11 => self.m11_pin.is_high(),
+            DigitalInput::M12 => self.m12_pin.is_high(),
+            DigitalInput::M13 => self.m13_pin.is_high(),
         }
     }
 
@@ -423,7 +466,17 @@ mod rtic_app {
         can_tx_buf: ConstGenericRingBuffer<bxcan::Frame, 10>,
         adc_result_vbat: f32,
         adc_result_tpcb: f32,
-        adc_result_current_vbat: u16,
+        adc_result_current1: f32,
+        adc_result_current2: f32,
+        adc_result_current3: f32,
+        adc_result_current4: f32,
+        adc_result_currentL: f32,
+        adc_result_m1: f32,
+        adc_result_m2: f32,
+        adc_result_m3: f32,
+        adc_result_m4: f32,
+        adc_result_m5: f32,
+        adc_result_m6: f32,
     }
 
     #[local]
@@ -441,7 +494,18 @@ mod rtic_app {
         adc_pa1: gpio::Pin<'A', 1, gpio::Analog>,
         adc_pa2: gpio::Pin<'A', 2, gpio::Analog>,
         adc_pa3: gpio::Pin<'A', 3, gpio::Analog>,
+        adc_pa4: gpio::Pin<'A', 4, gpio::Analog>,
+        adc_pa5: gpio::Pin<'A', 5, gpio::Analog>,
+        adc_pa6: gpio::Pin<'A', 6, gpio::Analog>,
+        adc_pa7: gpio::Pin<'A', 7, gpio::Analog>,
+        adc_pb0: gpio::Pin<'B', 0, gpio::Analog>,
         adc_pb1: gpio::Pin<'B', 1, gpio::Analog>,
+        adc_pc0: gpio::Pin<'C', 0, gpio::Analog>,
+        adc_pc1: gpio::Pin<'C', 1, gpio::Analog>,
+        adc_pc2: gpio::Pin<'C', 2, gpio::Analog>,
+        adc_pc3: gpio::Pin<'C', 3, gpio::Analog>,
+        adc_pc4: gpio::Pin<'C', 4, gpio::Analog>,
+        adc_pc5: gpio::Pin<'C', 5, gpio::Analog>,
         // Digital input pins
         // Output pins
         // (See HardwareImplementation)
@@ -488,6 +552,14 @@ mod rtic_app {
         let mut group4oc_pin = gpioc.pc9.into_input();
 
         let mut ign_input_pin = gpiod.pd15.into_input();
+
+        let mut m7_pin  = gpioc.pc13.into_input();
+        let mut m8_pin  = gpioa.pa8.into_input();
+        let mut m9_pin  = gpioe.pe7.into_input();
+        let mut m10_pin = gpioe.pe8.into_input();
+        let mut m11_pin = gpioe.pe9.into_input();
+        let mut m12_pin = gpiob.pb3.into_input();
+        let mut m13_pin = gpiob.pb4.into_input();
 
         // Output pins
 
@@ -627,16 +699,29 @@ mod rtic_app {
         // ADC
 
         let adc_pa1 = gpioa.pa1.into_analog(); // Version detection
-        let adc_pa2 = gpioa.pa2.into_analog(); // Vbat
-        let adc_pa3 = gpioa.pa3.into_analog(); // LDR
+        let adc_pa2 = gpioa.pa2.into_analog(); // Extension connector
+        let adc_pa3 = gpioa.pa3.into_analog(); // Vbat
+        let adc_pa4 = gpioa.pa4.into_analog(); // Group 3 current
+        let adc_pa5 = gpioa.pa5.into_analog(); // Group 1 current
+        let adc_pa6 = gpioa.pa6.into_analog(); // Group 2 current
+        let adc_pa7 = gpioa.pa7.into_analog(); // Group 4 current
+        let adc_pb0 = gpiob.pb0.into_analog(); // M1
         let adc_pb1 = gpiob.pb1.into_analog(); // PcbT
-                                               // TODO: More pins
+        let adc_pc0 = gpioc.pc0.into_analog(); // M2
+        let adc_pc1 = gpioc.pc1.into_analog(); // M3
+        let adc_pc2 = gpioc.pc2.into_analog(); // M4
+        let adc_pc3 = gpioc.pc3.into_analog(); // M5
+        let adc_pc4 = gpioc.pc4.into_analog(); // M6
+        let adc_pc5 = gpioc.pc5.into_analog(); // Group L current
 
         let adc_config = AdcConfig::default()
             .resolution(adc::config::Resolution::Twelve)
             .clock(adc::config::Clock::Pclk2_div_8);
 
         let adc1 = Adc::adc1(cx.device.ADC1, true, adc_config);
+
+        // TODO: Hardware version detection
+        //let adc_result_hwver = adc.convert(adc_pa1, SampleTime::Cycles_480);
 
         // I2C
         // There's a 24C02 EEPROM chip on this bus
@@ -685,6 +770,17 @@ mod rtic_app {
             can_tx_buf: ConstGenericRingBuffer::new(),
             adc_result_vbat: f32::NAN,
             adc_result_tpcb: f32::NAN,
+            adc_result_current1: f32::NAN,
+            adc_result_current2: f32::NAN,
+            adc_result_current3: f32::NAN,
+            adc_result_current4: f32::NAN,
+            adc_result_currentL: f32::NAN,
+            adc_result_m1: f32::NAN,
+            adc_result_m2: f32::NAN,
+            adc_result_m3: f32::NAN,
+            adc_result_m4: f32::NAN,
+            adc_result_m5: f32::NAN,
+            adc_result_m6: f32::NAN,
             tim3_pwm,
             tim4_pwm,
             group1oc_pin,
@@ -692,6 +788,13 @@ mod rtic_app {
             group3oc_pin,
             group4oc_pin,
             ign_input_pin,
+            m7_pin,
+            m8_pin,
+            m9_pin,
+            m10_pin,
+            m11_pin,
+            m12_pin,
+            m13_pin,
             hout1_pin,
             hout2_pin,
             hout3_pin,
@@ -731,7 +834,17 @@ mod rtic_app {
                 can_tx_buf: ConstGenericRingBuffer::new(),
                 adc_result_vbat: 0.0,
                 adc_result_tpcb: 0.0,
-                adc_result_current_vbat: 0,
+                adc_result_current1: 0.0,
+                adc_result_current2: 0.0,
+                adc_result_current3: 0.0,
+                adc_result_current4: 0.0,
+                adc_result_currentL: 0.0,
+                adc_result_m1: 0.0,
+                adc_result_m2: 0.0,
+                adc_result_m3: 0.0,
+                adc_result_m4: 0.0,
+                adc_result_m5: 0.0,
+                adc_result_m6: 0.0,
             },
             Local {
                 usart1_rx: usart1_rx,
@@ -743,10 +856,21 @@ mod rtic_app {
                 command_accumulator: CommandAccumulator::new(),
                 i2c1: i2c1,
                 adc1: adc1,
-                adc_pa1: adc_pa1,
-                adc_pa2: adc_pa2,
-                adc_pa3: adc_pa3,
-                adc_pb1: adc_pb1,
+                adc_pa1,
+                adc_pa2,
+                adc_pa3,
+                adc_pa4,
+                adc_pa5,
+                adc_pa6,
+                adc_pa7,
+                adc_pb0,
+                adc_pb1,
+                adc_pc0,
+                adc_pc1,
+                adc_pc2,
+                adc_pc3,
+                adc_pc4,
+                adc_pc5,
                 hw,
             },
         )
@@ -773,7 +897,17 @@ mod rtic_app {
             can_tx_buf,
             adc_result_vbat,
             adc_result_tpcb,
-            adc_result_current_vbat,
+            adc_result_current1,
+            adc_result_current2,
+            adc_result_current3,
+            adc_result_current4,
+            adc_result_currentL,
+            adc_result_m1,
+            adc_result_m2,
+            adc_result_m3,
+            adc_result_m4,
+            adc_result_m5,
+            adc_result_m6,
         ],
         local = [
             command_accumulator,
@@ -787,6 +921,17 @@ mod rtic_app {
             // Update values
             cx.local.hw.adc_result_vbat = cx.shared.adc_result_vbat.lock(|v| *v);
             cx.local.hw.adc_result_tpcb = cx.shared.adc_result_tpcb.lock(|v| *v);
+            cx.local.hw.adc_result_current1 = cx.shared.adc_result_current1.lock(|v| *v);
+            cx.local.hw.adc_result_current2 = cx.shared.adc_result_current2.lock(|v| *v);
+            cx.local.hw.adc_result_current3 = cx.shared.adc_result_current3.lock(|v| *v);
+            cx.local.hw.adc_result_current4 = cx.shared.adc_result_current4.lock(|v| *v);
+            cx.local.hw.adc_result_currentL = cx.shared.adc_result_currentL.lock(|v| *v);
+            cx.local.hw.adc_result_m1 = cx.shared.adc_result_m1.lock(|v| *v);
+            cx.local.hw.adc_result_m2 = cx.shared.adc_result_m2.lock(|v| *v);
+            cx.local.hw.adc_result_m3 = cx.shared.adc_result_m3.lock(|v| *v);
+            cx.local.hw.adc_result_m4 = cx.shared.adc_result_m4.lock(|v| *v);
+            cx.local.hw.adc_result_m5 = cx.shared.adc_result_m5.lock(|v| *v);
+            cx.local.hw.adc_result_m6 = cx.shared.adc_result_m6.lock(|v| *v);
 
             state.update(cx.local.hw);
 
@@ -826,16 +971,37 @@ mod rtic_app {
 
     #[task(priority = 2,
         shared = [
-            adc_result_current_vbat,
             adc_result_vbat,
             adc_result_tpcb,
+            adc_result_current1,
+            adc_result_current2,
+            adc_result_current3,
+            adc_result_current4,
+            adc_result_currentL,
+            adc_result_m1,
+            adc_result_m2,
+            adc_result_m3,
+            adc_result_m4,
+            adc_result_m5,
+            adc_result_m6,
         ],
         local = [
             adc1,
             adc_pa1,
             adc_pa2,
             adc_pa3,
+            adc_pa4,
+            adc_pa5,
+            adc_pa6,
+            adc_pa7,
+            adc_pb0,
             adc_pb1,
+            adc_pc0,
+            adc_pc1,
+            adc_pc2,
+            adc_pc3,
+            adc_pc4,
+            adc_pc5,
         ]
     )]
     async fn adc_task(mut cx: adc_task::Context) {
@@ -844,25 +1010,15 @@ mod rtic_app {
             // NOTE: DMA seemed to work, until it stopped after an essentially
             // random amount of time. Thus, we are doing it this way.
 
-            //let adc_result_hwver = cx.local.adc.convert(cx.local.adc_pa1, SampleTime::Cycles_480);
-
+            // Vbat (with scaling and lowpass filtering)
             let adc_result_vbat =
                 cx.local
                     .adc1
                     .convert(cx.local.adc_pa3, SampleTime::Cycles_480) as f32
                     * 0.00881;
-
-            // Assign with lowpass
             cx.shared.adc_result_vbat.lock(|v| *v = *v * 0.98 + adc_result_vbat * 0.02);
 
-            // TODO: Current measurements on PA4..PA7
-            /*let adc_result_current_vbat = cx
-                .local
-                .adc1
-                .convert(cx.local.adc_pa4, SampleTime::Cycles_480);
-
-            cx.shared.adc_result_current_vbat.lock(|v| *v = adc_result_current_vbat);*/
-
+            // PcbT (with conversion and lowpass filtering)
             // Correct conversion from ADC to DegC (10k NTC thermistor with 10k
             // pull-up resistor)
             let adc_value = cx.local.adc1.convert(cx.local.adc_pb1, SampleTime::Cycles_480) as f32;
@@ -872,9 +1028,55 @@ mod rtic_app {
             let t_kelvin = 1.0 / t_inv;
             let t_celsius = t_kelvin - 273.15;
             let adc_result_tpcb = t_celsius;
-
-            // Assign with lowpass
             cx.shared.adc_result_tpcb.lock(|v| *v = *v * 0.98 + adc_result_tpcb * 0.02);
+
+            // Current measurements (with scaling, without filtering)
+
+            let result = cx.local.adc1.convert(
+                    cx.local.adc_pa5, SampleTime::Cycles_480) as f32 * 0.00403;
+            cx.shared.adc_result_current1.lock(|v| *v = result);
+
+            let result = cx.local.adc1.convert(
+                    cx.local.adc_pa6, SampleTime::Cycles_480) as f32 * 0.00403;
+            cx.shared.adc_result_current2.lock(|v| *v = result);
+
+            let result = cx.local.adc1.convert(
+                    cx.local.adc_pa4, SampleTime::Cycles_480) as f32 * 0.00403;
+            cx.shared.adc_result_current3.lock(|v| *v = result);
+
+            let result = cx.local.adc1.convert(
+                    cx.local.adc_pa7, SampleTime::Cycles_480) as f32 * 0.00403;
+            cx.shared.adc_result_current4.lock(|v| *v = result);
+
+            let result = cx.local.adc1.convert(
+                    cx.local.adc_pc5, SampleTime::Cycles_480) as f32 * 0.00403 * 3.0;
+            cx.shared.adc_result_currentL.lock(|v| *v = result);
+
+            // General external inputs (with scaling, without filtering)
+
+            let result = cx.local.adc1.convert(
+                    cx.local.adc_pb0, SampleTime::Cycles_480) as f32 * 0.00749;
+            cx.shared.adc_result_m1.lock(|v| *v = result);
+
+            let result = cx.local.adc1.convert(
+                    cx.local.adc_pc0, SampleTime::Cycles_480) as f32 * 0.00749;
+            cx.shared.adc_result_m2.lock(|v| *v = result);
+
+            let result = cx.local.adc1.convert(
+                    cx.local.adc_pc1, SampleTime::Cycles_480) as f32 * 0.00749;
+            cx.shared.adc_result_m3.lock(|v| *v = result);
+
+            let result = cx.local.adc1.convert(
+                    cx.local.adc_pc2, SampleTime::Cycles_480) as f32 * 0.00749;
+            cx.shared.adc_result_m4.lock(|v| *v = result);
+
+            let result = cx.local.adc1.convert(
+                    cx.local.adc_pc3, SampleTime::Cycles_480) as f32 * 0.00749;
+            cx.shared.adc_result_m5.lock(|v| *v = result);
+
+            let result = cx.local.adc1.convert(
+                    cx.local.adc_pc4, SampleTime::Cycles_480) as f32 * 0.00749;
+            cx.shared.adc_result_m6.lock(|v| *v = result);
 
             Systick::delay(20.millis()).await;
         }

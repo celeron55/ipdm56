@@ -17,6 +17,17 @@ use ringbuffer::RingBuffer;
 pub enum AnalogInput {
     AuxVoltage,
     PcbT,
+    Current1,
+    Current2,
+    Current3,
+    Current4,
+    CurrentL,
+    M1,
+    M2,
+    M3,
+    M4,
+    M5,
+    M6,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -26,6 +37,13 @@ pub enum DigitalInput {
     Group3OC, // HOUT7..10
     Group4OC, // HOUT11,HOUT12,WAKEUP
     Ignition,
+    M7,
+    M8,
+    M9,
+    M10,
+    M11,
+    M12,
+    M13,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

@@ -1,6 +1,9 @@
 ipdmrust
 ========
 
+Example firmware and support crates for iPDM56 v2, written in Rust.
+
+
 Preparation before doing anything else
 --------------------------------------
 Symlink your application crate:
