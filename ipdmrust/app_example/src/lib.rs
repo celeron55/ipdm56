@@ -234,11 +234,15 @@ impl MainState {
                 );
 
         let target_temperature = {
-            if get_parameter(ParameterId::CabinT).value.is_nan() ||
-                    get_parameter(ParameterId::CabinT).value < 10.0 {
+            if get_parameter(ParameterId::CabinT).value.is_nan() {
+                60.0
+            } else if get_parameter(ParameterId::CabinT).value < 10.0 {
+                60.0
+            } else if get_parameter(ParameterId::CabinT).value < 28.0 &&
+                    hw.get_digital_input(DigitalInput::Ignition) {
                 60.0
             } else {
-                60.0 - (get_parameter(ParameterId::CabinT).value - 10.0) * 1.6
+                60.0 - (get_parameter(ParameterId::CabinT).value - 10.0) * 1.8
             }
         };
 
