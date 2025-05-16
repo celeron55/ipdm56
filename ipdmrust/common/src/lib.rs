@@ -12,6 +12,7 @@ use int_enum::IntEnum;
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
 use ringbuffer::RingBuffer;
+use bitvec::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum AnalogInput {
@@ -101,6 +102,10 @@ pub trait HardwareInterface {
 
 pub enum CanBitSelection {
     Bit(u8),
+    BeUnsigned(u8, u8),
+    LeUnsigned(u8, u8),
+    BeSigned(u8, u8),
+    LeSigned(u8, u8),
     Uint8(u8),
     Int8(u8),
     Function(fn(&[u8]) -> f32),
@@ -261,9 +266,32 @@ pub fn update_parameters_on_can(frame: bxcan::Frame, millis: u64) {
                 if can_map.id == frame.id() {
                     match can_map.bits {
                         CanBitSelection::Bit(bit_i) => {
-                            param.set_value((data[(bit_i as usize) / 8] & (1 << (bit_i % 8)))
-                                    as f32 * can_map.scale,
-                                millis);
+                            let byte = data[(bit_i as usize) / 8];
+                            let bit_in_byte = bit_i % 8;
+                            let mask = 1 << bit_in_byte;
+                            param.set_value(
+                                    ((byte & mask) >> bit_in_byte) as f32 * can_map.scale,
+                                    millis);
+                        }
+                        CanBitSelection::BeUnsigned(i0, len) => {
+                            let bits = data.view_bits::<Msb0>();
+                            let raw = bits[i0 as usize .. (i0+len) as usize].load_be::<u64>();
+                            param.set_value(raw as f32 * can_map.scale, millis);
+                        }
+                        CanBitSelection::LeUnsigned(i0, len) => {
+                            let bits = data.view_bits::<Lsb0>();
+                            let raw = bits[i0 as usize .. (i0+len) as usize].load_le::<u64>();
+                            param.set_value(raw as f32 * can_map.scale, millis);
+                        }
+                        CanBitSelection::BeSigned(i0, len) => {
+                            let bits = data.view_bits::<Msb0>();
+                            let raw = bits[i0 as usize .. (i0+len) as usize].load_be::<i64>();
+                            param.set_value(raw as f32 * can_map.scale, millis);
+                        }
+                        CanBitSelection::LeSigned(i0, len) => {
+                            let bits = data.view_bits::<Lsb0>();
+                            let raw = bits[i0 as usize .. (i0+len) as usize].load_le::<i64>();
+                            param.set_value(raw as f32 * can_map.scale, millis);
                         }
                         CanBitSelection::Uint8(byte_i) => {
                             param.set_value((data[byte_i as usize] as u8) as
@@ -285,4 +313,3 @@ pub fn update_parameters_on_can(frame: bxcan::Frame, millis: u64) {
         }
     }
 }
-

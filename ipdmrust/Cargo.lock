@@ -520,6 +520,7 @@ name = "common"
 version = "0.1.0"
 dependencies = [
  "arrayvec",
+ "bitvec",
  "bxcan 0.8.0",
  "embedded-graphics",
  "fixedstr",

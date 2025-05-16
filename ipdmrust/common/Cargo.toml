@@ -16,6 +16,7 @@ ringbuffer = { version = "0.15.0", default-features = false, features = [] }
 bxcan = "0.8.0"
 int-enum = "1.1.2"
 safe-regex = { version = "0.3.0", default-features = false, features = [] }
+bitvec = { version = "1.0.1", default-features = false }
 #arrayvec = { version = "0.7.4", default-features = false, features = [] }
 #nalgebra = { version = "0.32.3", default-features = false, features = [ "libm" ] }
 #micromath = "2.1.0"
