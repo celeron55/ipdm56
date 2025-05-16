@@ -276,9 +276,28 @@ impl MainState {
             hw.set_digital_output(DigitalOutput::Wakeup,
                     self.request_wakeup_and_main_contactor);
 
+            let heat_battery_to_t = {
+                if get_parameter(ParameterId::HvacRequested).value > 0.5 {
+                    22.0
+                } else {
+                    3.0
+                }
+            };
+
             // Update battery solenoids
-            let heat_battery = get_parameter(ParameterId::BatteryTMin).value < 3.0 &&
-                    get_parameter(ParameterId::BatteryTMax).value < 25.0;
+            let heat_battery = (
+                    get_parameter(ParameterId::BatteryTMin).value < heat_battery_to_t &&
+                    get_parameter(ParameterId::BatteryTMax).value < 30.0 &&
+                    (
+                        // Only allow 100% duty cycle if battery < 3°C or
+                        // cabin > 15°C
+                        get_parameter(ParameterId::BatteryTMin).value < 3.0
+                        ||
+                        get_parameter(ParameterId::CabinT).value > 15.0
+                        ||
+                        hw.millis() % 120000 < 60000 // 50% duty cycle
+                    )
+            );
             let cool_battery = get_parameter(ParameterId::BatteryTMin).value > 23.0 &&
                     get_parameter(ParameterId::BatteryTMax).value > 30.0;
             hw.set_digital_output(BatteryNeutralSolenoid,
