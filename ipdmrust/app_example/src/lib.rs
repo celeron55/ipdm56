@@ -17,6 +17,7 @@ use int_enum::IntEnum;
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
 use ringbuffer::RingBuffer;
+use bitvec::prelude::*;
 
 const ObcDcdc12VSupply: DigitalOutput = DigitalOutput::HOUT1;
 const DcdcEnable: DigitalOutput = DigitalOutput::HOUT6;
@@ -332,6 +333,75 @@ impl MainState {
             if old_value != new_value {
                 self.send_setting_frame(hw, 0x120, 0, old_value, new_value);
             }
+        }
+
+        {
+            // Publish generic inputs for external monitoring
+
+            let ignition = hw.get_digital_input(DigitalInput::Ignition);
+            let m7 = hw.get_digital_input(DigitalInput::M7);
+            let m8 = hw.get_digital_input(DigitalInput::M8);
+            let m9 = hw.get_digital_input(DigitalInput::M9);
+            let m10 = hw.get_digital_input(DigitalInput::M10);
+            let m11 = hw.get_digital_input(DigitalInput::M11);
+            let m12 = hw.get_digital_input(DigitalInput::M12);
+            let m13 = hw.get_digital_input(DigitalInput::M13);
+
+            let m1 = (hw.get_analog_input(AnalogInput::M1) * 128.0) as u16;
+            let m2 = (hw.get_analog_input(AnalogInput::M2) * 128.0) as u16;
+            let m3 = (hw.get_analog_input(AnalogInput::M3) * 128.0) as u16;
+            let m4 = (hw.get_analog_input(AnalogInput::M4) * 128.0) as u16;
+            let m5 = (hw.get_analog_input(AnalogInput::M5) * 128.0) as u16;
+            let m6 = (hw.get_analog_input(AnalogInput::M6) * 128.0) as u16;
+
+            let mut data = [0u8; 8];
+            let mut bits = data.view_bits_mut::<Msb0>();
+            bits[0..8].store_be(
+                if ignition { (1<<0) } else { 0 } |
+                if m7 { (1<<1) } else { 0 } |
+                if m8 { (1<<2) } else { 0 } |
+                if m9 { (1<<3) } else { 0 } |
+                if m10 { (1<<4) } else { 0 } |
+                if m11 { (1<<5) } else { 0 } |
+                if m12 { (1<<6) } else { 0 } |
+                if m13 { (1<<7) } else { 0 }
+            );
+            bits[8..16].store_be(0);
+            // 12 bits for each analog value (big endian)
+            bits[16..28].store_be(m1);
+            bits[28..40].store_be(m2);
+            bits[40..52].store_be(m3);
+            bits[52..64].store_be(m4);
+
+            self.send_normal_frame(hw, 0x404, &data);
+
+            let mut data = [0u8; 8];
+            let mut bits = data.view_bits_mut::<Msb0>();
+            bits[0..12].store_be(m5);
+            bits[12..24].store_be(m6);
+
+            self.send_normal_frame(hw, 0x405, &data);
+        }
+
+        {
+            // Publish current measurements for external monitoring
+
+            let current1 = (hw.get_analog_input(AnalogInput::Current1) * 256.0) as u16;
+            let current2 = (hw.get_analog_input(AnalogInput::Current2) * 256.0) as u16;
+            let current3 = (hw.get_analog_input(AnalogInput::Current3) * 256.0) as u16;
+            let current4 = (hw.get_analog_input(AnalogInput::Current4) * 256.0) as u16;
+            let currentL = (hw.get_analog_input(AnalogInput::CurrentL) * 256.0) as u16;
+
+            let mut data = [0u8; 8];
+            let mut bits = data.view_bits_mut::<Msb0>();
+            // 12 bits for each value (big endian)
+            bits[0..12].store_be(current1);
+            bits[12..24].store_be(current2);
+            bits[24..36].store_be(current3);
+            bits[36..48].store_be(current4);
+            bits[48..60].store_be(currentL);
+
+            self.send_normal_frame(hw, 0x406, &data);
         }
     }
 
