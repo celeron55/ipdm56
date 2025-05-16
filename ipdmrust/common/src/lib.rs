@@ -108,7 +108,7 @@ pub enum CanBitSelection {
     LeSigned(u8, u8),
     Uint8(u8),
     Int8(u8),
-    Function(fn(&[u8]) -> f32),
+    Function(fn(&[u8]) -> Option<f32>),
 }
 
 pub struct CanMap {
@@ -304,8 +304,9 @@ pub fn update_parameters_on_can(frame: bxcan::Frame, millis: u64) {
                                 millis);
                         }
                         CanBitSelection::Function(function) => {
-                            param.set_value(function(data) * can_map.scale,
-                                millis);
+                            if let Some(value) = function(data) {
+                                param.set_value(value * can_map.scale, millis);
+                            }
                         }
                     }
                 }

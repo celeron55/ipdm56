@@ -35,8 +35,8 @@ define_parameters! {
         unit: "V",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x101).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
-                (((data[0] as u16) << 4) | ((data[1] as u16) >> 4)) as f32
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
+                Some((((data[0] as u16) << 4) | ((data[1] as u16) >> 4)) as f32)
             }),
             scale: 0.01,
         },
@@ -47,8 +47,8 @@ define_parameters! {
         unit: "V",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x101).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
-                ((((data[1] & 0x0f) as u16) << 8) | data[2] as u16) as f32
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
+                Some(((((data[1] & 0x0f) as u16) << 8) | data[2] as u16) as f32)
             }),
             scale: 0.01,
         },
@@ -67,10 +67,10 @@ define_parameters! {
         unit: "degC",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x398).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
                 let t1 = data[3] as i8 - 40;
                 let t2 = data[4] as i8 - 40;
-                (if t1 > t2 { t1 } else { t2 }) as f32
+                Some((if t1 > t2 { t1 } else { t2 }) as f32)
             }),
             scale: 1.0,
         },
@@ -80,11 +80,11 @@ define_parameters! {
         unit: "",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x398).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
                 if data[5] > 0 {
-                    1.0
+                    Some(1.0)
                 } else {
-                    0.0
+                    Some(0.0)
                 }
             }),
             scale: 1.0,
@@ -95,13 +95,13 @@ define_parameters! {
         unit: "%",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x398).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
                 // TODO: This accurate. The heater can be requested different
                 //       power levels in 0x188
                 if data[5] > 0 {
-                    100.0
+                    Some(100.0)
                 } else {
-                    0.0
+                    Some(0.0)
                 }
             }),
             scale: 1.0,
@@ -172,7 +172,9 @@ define_parameters! {
         unit: "",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x203).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 { (data[0] >> 4) as f32 }),
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
+                Some((data[0] >> 4) as f32)
+            }),
             scale: 1.0,
         },
     },
@@ -181,10 +183,10 @@ define_parameters! {
         unit: "degC",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x398).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
                 let t1 = data[3] as i8 - 40;
                 let t2 = data[4] as i8 - 40;
-                (if t1 > t2 { t1 } else { t2 }) as f32
+                Some((if t1 > t2 { t1 } else { t2 }) as f32)
             }),
             scale: 1.0,
         },
@@ -194,11 +196,11 @@ define_parameters! {
         unit: "",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x398).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
                 if data[5] > 0 {
-                    1.0
+                    Some(1.0)
                 } else {
-                    0.0
+                    Some(0.0)
                 }
             }),
             scale: 1.0,
@@ -209,13 +211,13 @@ define_parameters! {
         unit: "%",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x398).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
                 // TODO: This accurate. The heater can be requested different
                 //       power levels in 0x188
                 if data[5] > 0 {
-                    100.0
+                    Some(100.0)
                 } else {
-                    0.0
+                    Some(0.0)
                 }
             }),
             scale: 1.0,
@@ -239,11 +241,15 @@ define_parameters! {
         unit: "",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x570).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
-                if data[0] == 2 && data[5] == 1 {
-                    1.0
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
+                if data[0] == 2 {
+                    if data[5] == 1 {
+                        Some(1.0)
+                    } else {
+                        Some(0.0)
+                    }
                 } else {
-                    0.0
+                    None
                 }
             }),
             scale: 1.0,
@@ -272,8 +278,8 @@ define_parameters! {
         unit: "A",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x102).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
-                (((data[2] as u16) << 8) | data[3] as u16) as f32
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
+                Some((((data[2] as u16) << 8) | data[3] as u16) as f32)
             }),
             scale: 0.1,
         },
@@ -284,8 +290,8 @@ define_parameters! {
         unit: "A",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x102).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
-                (((data[4] as u16) << 8) | data[5] as u16) as f32
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
+                Some((((data[4] as u16) << 8) | data[5] as u16) as f32)
             }),
             scale: 0.1,
         },
@@ -331,8 +337,8 @@ define_parameters! {
         unit: "mV",
         can_map: CanMap {
             id: bxcan::Id::Standard(StandardId::new(0x104).unwrap()),
-            bits: CanBitSelection::Function(|data: &[u8]| -> f32 {
-                (((data[0] as u16) << 8) | data[1] as u16) as f32
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
+                Some((((data[0] as u16) << 8) | data[1] as u16) as f32)
             }),
             scale: 1.0,
         },
