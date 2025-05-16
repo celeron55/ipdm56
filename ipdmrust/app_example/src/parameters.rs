@@ -243,7 +243,7 @@ define_parameters! {
             id: bxcan::Id::Standard(StandardId::new(0x570).unwrap()),
             bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
                 if data[0] == 2 {
-                    if data[5] == 1 {
+                    if data[4] == 1 {
                         Some(1.0)
                     } else {
                         Some(0.0)

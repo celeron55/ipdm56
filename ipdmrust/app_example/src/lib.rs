@@ -302,7 +302,8 @@ impl MainState {
                 ignition_input ||
                         get_parameter(ParameterId::Precharging).value > 0.5 ||
                         get_parameter(ParameterId::MainContactor).value > 0.5 ||
-                        get_parameter(ParameterId::ActivateEvse).value > 0.5
+                        get_parameter(ParameterId::ActivateEvse).value > 0.5 ||
+                        get_parameter(ParameterId::HvacRequested).value > 0.5
             }
         });
 
