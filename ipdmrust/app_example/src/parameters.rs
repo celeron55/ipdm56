@@ -107,6 +107,15 @@ define_parameters! {
             scale: 1.0,
         },
     },
+    CabinT {
+        display_name: "Cabin T",
+        unit: "degC",
+        can_map: CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x404).unwrap()),
+            bits: CanBitSelection::Int8(1),
+            scale: 1.0,
+        },
+    },
     PcbT {
         display_name: "PcbT",
         decimals: 1,

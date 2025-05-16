@@ -220,8 +220,18 @@ impl MainState {
     }
 
     fn update_heater(&mut self, hw: &mut dyn HardwareInterface) {
-        let heating_needed = hw.get_digital_input(DigitalInput::Ignition) ||
-                get_parameter(ParameterId::HvacRequested).value > 0.5;
+        let heating_needed =
+                (
+                    hw.get_digital_input(DigitalInput::Ignition)
+                    ||
+                    get_parameter(ParameterId::HvacRequested).value > 0.5
+                )
+                &&
+                (
+                    get_parameter(ParameterId::CabinT).value.is_nan()
+                    ||
+                    get_parameter(ParameterId::CabinT).value < 28.0
+                );
 
         self.request_heater_power_percent = if
             !heating_needed ||
@@ -374,14 +384,14 @@ impl MainState {
             bits[40..52].store_be(m3);
             bits[52..64].store_be(m4);
 
-            self.send_normal_frame(hw, 0x404, &data);
+            self.send_normal_frame(hw, 0x204, &data);
 
             let mut data = [0u8; 8];
             let mut bits = data.view_bits_mut::<Msb0>();
             bits[0..12].store_be(m5);
             bits[12..24].store_be(m6);
 
-            self.send_normal_frame(hw, 0x405, &data);
+            self.send_normal_frame(hw, 0x205, &data);
         }
 
         {
@@ -402,7 +412,7 @@ impl MainState {
             bits[36..48].store_be(current4);
             bits[48..60].store_be(currentL);
 
-            self.send_normal_frame(hw, 0x406, &data);
+            self.send_normal_frame(hw, 0x206, &data);
         }
     }
 
