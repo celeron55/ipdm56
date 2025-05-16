@@ -1030,27 +1030,29 @@ mod rtic_app {
             let adc_result_tpcb = t_celsius;
             cx.shared.adc_result_tpcb.lock(|v| *v = *v * 0.98 + adc_result_tpcb * 0.02);
 
-            // Current measurements (with scaling, without filtering)
+            // Current measurements (with scaling, with a short filter)
+
+            let f = 0.2;
 
             let result = cx.local.adc1.convert(
                     cx.local.adc_pa5, SampleTime::Cycles_480) as f32 * 0.00403;
-            cx.shared.adc_result_current1.lock(|v| *v = result);
+            cx.shared.adc_result_current1.lock(|v| *v = *v * (1.0-f) + result * f);
 
             let result = cx.local.adc1.convert(
                     cx.local.adc_pa6, SampleTime::Cycles_480) as f32 * 0.00403;
-            cx.shared.adc_result_current2.lock(|v| *v = result);
+            cx.shared.adc_result_current2.lock(|v| *v = *v * (1.0-f) + result * f);
 
             let result = cx.local.adc1.convert(
                     cx.local.adc_pa4, SampleTime::Cycles_480) as f32 * 0.00403;
-            cx.shared.adc_result_current3.lock(|v| *v = result);
+            cx.shared.adc_result_current3.lock(|v| *v = *v * (1.0-f) + result * f);
 
             let result = cx.local.adc1.convert(
                     cx.local.adc_pa7, SampleTime::Cycles_480) as f32 * 0.00403;
-            cx.shared.adc_result_current4.lock(|v| *v = result);
+            cx.shared.adc_result_current4.lock(|v| *v = *v * (1.0-f) + result * f);
 
             let result = cx.local.adc1.convert(
                     cx.local.adc_pc5, SampleTime::Cycles_480) as f32 * 0.00403 * 3.0;
-            cx.shared.adc_result_currentL.lock(|v| *v = result);
+            cx.shared.adc_result_currentL.lock(|v| *v = *v * (1.0-f) + result * f);
 
             // General external inputs (with scaling, without filtering)
 
