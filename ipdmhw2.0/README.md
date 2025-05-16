@@ -35,6 +35,42 @@ The ROM bootloader supports these alternative flashing options:
 - CAN
     - To enable CAN flashing, bridge JP3001. This enables CAN flashing via CAN2.
 
+Things needed in addition to the factory-populated PCB
+------------------------------------------------------
+
+1. 5V 2A regulator module: K7805-2000R3, AMSR2-7805JZ or similar - if the PCB
+   didn't come with that
+2. The Chinese 56-pin ECU enclosure with connector
+    - Just type exactly that into Aliexpress or Ebay
+    - Get the seals also if it's going to be installed outside - or just apply
+      your favourite non-glue sealant
+3. 5.0mm thick soft thermal pads, installed underneath the high-side MOSFETs
+    - 2 pcs of these cover enough area:
+      https://www.digikey.fi/en/products/detail/t-global-technology/TG-A3500-25-25-5-0/11201382
+4. If you're going to supply high-side power via the input stud, you need:
+    1. Choose whether to bolt directly to the PCB or whether to solder on an M5
+       threaded PCB terminal
+        - If you're getting the terminal, then you'd better know the PCB was
+          designed for the Chinese XFCN T54120117-1300. There probably exists a
+          western part also that will fit at least somewhat reasonably.
+    2. A brass or copper threaded standoff, preferably tin coated. If your seal
+       is quite flat, a good height is 12...15 mm (without PCB terminal) or shorter by
+       the appropriate amount if you use a PCB terminal
+    3. The matching nut or bolt to each end of the standoff
+    4. If you're bolting directly to PCB, then you should install a pressure
+       spreading spring washer on the other side of the PCB, so that you make
+       lasting contact to the PCB rather than letting the stud shake loose. Also
+       a copper washer is recommended on the stud side, to spread the pressure
+    4. A seal to the hole you need to drill to the enclosure.
+        - Something very soft with something film-like on the center, to really
+          cling to the angular standoff shape. You're probably looking for a
+          hole size of 16 mm or larger to fit a good seal
+5. Consider which method you're going to use to program the board and get what
+   you need for that
+6. Consider which parts and tools you need for fixing the board, given that you
+   need to use some of the broken features in your given board version
+
+
 iPDM56 v2.0 fixing the board
 ----------------------------
 
