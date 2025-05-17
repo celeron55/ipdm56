@@ -311,10 +311,14 @@ impl MainState {
                     get_parameter(ParameterId::BatteryTMax).value > 35.0);
 
             // Update heating loop pump
-            hw.set_digital_output(HeatLoopPump, allow_solenoids &&
+            hw.set_digital_output(HeatLoopPump,
+                allow_solenoids &&
+                (
                     get_parameter(ParameterId::OutlanderHeaterHeating).value > 0.5 ||
                     get_parameter(ParameterId::OutlanderHeaterPowerPercent).value > 0.5 ||
-                    get_parameter(ParameterId::OutlanderHeaterT).value > 30.0);
+                    get_parameter(ParameterId::OutlanderHeaterT).value > 30.0
+                )
+            );
 
             info!("MainContactor: {:?}", get_parameter(ParameterId::MainContactor).value);
         }
