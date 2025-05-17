@@ -170,9 +170,22 @@ impl MainState {
                 get_parameter(ParameterId::LastSeenSoc).value.is_nan() ||
                         get_parameter(ParameterId::LastSeenSoc).value >= 10.0;
 
-        // This is to charge the 12V battery and send data
-        let daily_wakeup = hw.millis() > (1000 * 60 * 60 * 12) &&
-                hw.millis() % (1000 * 60 * 60 * 24) < (1000 * 60 * 30);
+        // This is to charge the 12V battery
+        let daily_wakeup = (
+            hw.millis() > (1000 * 3600 * 1)
+            &&
+            (
+                // Always every 24h for 30min
+                hw.millis() % (1000 * 3600 * 24) < (1000 * 60 * 30)
+                ||
+                (
+                    // Every 4h for 30min if 12V battery is low
+                    hw.millis() % (1000 * 3600 * 4) < (1000 * 60 * 30)
+                    &&
+                    get_parameter(ParameterId::AuxVoltage).value < 11.9
+                )
+            )
+        );
 
         self.request_wakeup_and_main_contactor =
                 ignition_input ||
