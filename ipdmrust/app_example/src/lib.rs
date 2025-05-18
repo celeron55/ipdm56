@@ -45,6 +45,7 @@ pub struct MainState {
     request_wakeup_and_main_contactor: bool,
     request_heater_power_percent: f32,
     ignition_last_on_ms: u64,
+    last_aux_low_ms: u64,
 }
 
 impl MainState {
@@ -65,6 +66,7 @@ impl MainState {
             request_wakeup_and_main_contactor: false,
             request_heater_power_percent: 0.0,
             ignition_last_on_ms: 0,
+            last_aux_low_ms: 0,
         }
     }
 
@@ -170,6 +172,10 @@ impl MainState {
                 get_parameter(ParameterId::LastSeenSoc).value.is_nan() ||
                         get_parameter(ParameterId::LastSeenSoc).value >= 10.0;
 
+        if get_parameter(ParameterId::AuxVoltage).value < 11.9 {
+            self.last_aux_low_ms = hw.millis();
+        }
+
         // This is to charge the 12V battery
         let daily_wakeup = (
             hw.millis() > (1000 * 3600 * 1)
@@ -182,7 +188,7 @@ impl MainState {
                     // Every 4h for 30min if 12V battery is low
                     hw.millis() % (1000 * 3600 * 4) < (1000 * 60 * 30)
                     &&
-                    get_parameter(ParameterId::AuxVoltage).value < 11.9
+                    hw.millis() - self.last_aux_low_ms < 1000 * 3600
                 )
             )
         );
