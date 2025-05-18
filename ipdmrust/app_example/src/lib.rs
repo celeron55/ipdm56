@@ -352,10 +352,13 @@ impl MainState {
                     self.last_millis - self.ignition_last_on_ms <= 6000 &&
                     get_parameter(ParameterId::ObcDcc).value <= 0.1 {
                 false
-            } else if self.last_millis > 60000 &&
-                    self.last_millis % (1000 * 60 * 30) < (1000 * 5) &&
+            } else if self.last_millis > 120000 &&
+                    // De-synced by 30s from wakeups happening on millis() % N,
+                    // so that this doesn't mess up the precharge
+                    (self.last_millis - 30000) % (1000 * 60 * 30) < (1000 * 5) &&
                     get_parameter(ParameterId::AuxVoltage).value <= 12.5 &&
                     get_parameter(ParameterId::DcdcStatus).value != 0x22 as f32 {
+                    get_parameter(ParameterId::Precharging).value < 0.5 {
                 false
             } else {
                 ignition_input ||
