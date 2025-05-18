@@ -285,10 +285,6 @@ impl MainState {
         if hw.millis() - self.last_solenoid_update_ms > 10000 {
             self.last_solenoid_update_ms = hw.millis();
 
-            // Wakeup line
-            hw.set_digital_output(DigitalOutput::Wakeup,
-                    self.request_wakeup_and_main_contactor);
-
             let heat_battery_to_t = {
                 if get_parameter(ParameterId::HvacRequested).value > 0.5 {
                     22.0
@@ -336,6 +332,16 @@ impl MainState {
             info!("MainContactor: {:?}", get_parameter(ParameterId::MainContactor).value);
         }
 
+        // Wakeup line
+        // This powers inverter_controller and BMS
+        hw.set_digital_output(DigitalOutput::Wakeup,
+                ignition_input ||
+                self.request_wakeup_and_main_contactor ||
+                get_parameter(ParameterId::Precharging).value > 0.5 ||
+                get_parameter(ParameterId::MainContactor).value > 0.5 ||
+                get_parameter(ParameterId::ActivateEvse).value > 0.5 ||
+                get_parameter(ParameterId::HvacRequested).value > 0.5);
+
         // Update OBC/DCDC 12V supply
         // * Enable this when:
         //   * The BMS is precharging (it needs the DC link voltage measurement)
@@ -357,8 +363,9 @@ impl MainState {
                     // so that this doesn't mess up the precharge
                     (self.last_millis - 30000) % (1000 * 60 * 30) < (1000 * 5) &&
                     get_parameter(ParameterId::AuxVoltage).value <= 12.5 &&
-                    get_parameter(ParameterId::DcdcStatus).value != 0x22 as f32 {
-                    get_parameter(ParameterId::Precharging).value < 0.5 {
+                    get_parameter(ParameterId::DcdcStatus).value != 0x22 as f32 &&
+                    get_parameter(ParameterId::Precharging).value < 0.5 &&
+                    get_parameter(ParameterId::MainContactor).value > 0.5 {
                 false
             } else {
                 ignition_input ||
