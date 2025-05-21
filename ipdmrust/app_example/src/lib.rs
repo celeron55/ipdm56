@@ -136,6 +136,8 @@ impl MainState {
         if hw.millis() - self.last_can_500ms >= 500 {
             self.last_can_500ms = hw.millis();
             self.send_can_500ms(hw);
+
+            self.log_parameters(hw);
         }
 
         if hw.millis() - self.last_can_200ms >= 200 {
@@ -153,8 +155,6 @@ impl MainState {
 
             info!("-!- ipdmrust running");
         }
-
-        self.log_parameters(hw);
 
         self.last_millis = millis;
         self.update_counter += 1;
