@@ -131,6 +131,7 @@ pub struct Parameter<'a> {
     pub unit: &'a str,
     pub can_map: Option<CanMap>,
     pub report_map: Option<ReportMap<'a>>,
+    pub log_threshold: f32,
     pub update_timestamp: u64,
 }
 
@@ -143,6 +144,7 @@ impl<'a> Parameter<'a> {
         unit: &'a str,
         can_map: Option<CanMap>,
         report_map: Option<ReportMap<'a>>,
+        log_threshold: f32,
     ) -> Self {
         Self {
             id: id,
@@ -152,6 +154,7 @@ impl<'a> Parameter<'a> {
             unit: unit,
             can_map: can_map,
             report_map: report_map,
+            log_threshold: log_threshold,
             update_timestamp: 0,
         }
     }
@@ -176,6 +179,7 @@ pub fn set_parameters(params: &'static mut [Parameter<'static>]) {
         unit: $unit:expr,
         $(can_map: $can_map:expr,)?
         $(report_map: $report_map:expr,)?
+        $(log_threshold: $log_threshold:expr,)?
     }),* $(,)?) => {
         pub const NUM_PARAMETERS: usize = {
             let mut count = 0;
@@ -227,6 +231,12 @@ pub fn set_parameters(params: &'static mut [Parameter<'static>]) {
                         let report_map: Option<ReportMap> = None;
                         $(let report_map = Some($report_map);)?
                         report_map
+                    },
+                    log_threshold: {
+                        #[allow(unused_variables)]
+                        let log_threshold: f32 = 1.0;
+                        $(let log_threshold = $log_threshold;)?
+                        log_threshold
                     },
                     update_timestamp: 0,
                 }

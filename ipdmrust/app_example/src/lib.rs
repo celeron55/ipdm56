@@ -19,6 +19,44 @@ use log::{debug, error, info, trace, warn};
 use ringbuffer::RingBuffer;
 use bitvec::prelude::*;
 
+fn string_contains_case_insensitive(haystack: &str, needle: &str) -> bool {
+    if needle.is_empty() || haystack.len() < needle.len() {
+        return needle.is_empty();
+    }
+
+    let haystack_bytes = haystack.as_bytes();
+    let needle_bytes = needle.as_bytes();
+
+    for i in 0..=(haystack.len() - needle.len()) {
+        if haystack_bytes[i].to_ascii_lowercase() == needle_bytes[0].to_ascii_lowercase() {
+            let mut matches = true;
+            for j in 1..needle.len() {
+                if haystack_bytes[i + j].to_ascii_lowercase() != needle_bytes[j].to_ascii_lowercase() {
+                    matches = false;
+                    break;
+                }
+            }
+            if matches {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+fn get_single_arg(command: &str) -> &str {
+    let mut arg_i0 = 0;
+    for (i, c) in command.chars().enumerate() {
+        if c == ' ' {
+            if arg_i0 == 0 {
+                arg_i0 = i + 1;
+                break;
+            }
+        }
+    }
+    &command[arg_i0..]
+}
+
 const ObcDcdc12VSupply: DigitalOutput = DigitalOutput::HOUT1;
 const DcdcEnable: DigitalOutput = DigitalOutput::HOUT6;
 const BatteryPump: DigitalOutput = DigitalOutput::HOUT4;
@@ -42,10 +80,10 @@ pub struct MainState {
     last_can_200ms: u64,
     last_can_500ms: u64,
     last_heater_update_ms: u64,
-    request_wakeup_and_main_contactor: bool,
-    request_heater_power_percent: f32,
     ignition_last_on_ms: u64,
     last_aux_low_ms: u64,
+    last_logged_values: [f32; NUM_PARAMETERS],
+    watch_filter: ArrayString<20>,
 }
 
 impl MainState {
@@ -63,10 +101,10 @@ impl MainState {
             last_can_200ms: 0,
             last_can_500ms: 0,
             last_heater_update_ms: 0,
-            request_wakeup_and_main_contactor: false,
-            request_heater_power_percent: 0.0,
             ignition_last_on_ms: 0,
             last_aux_low_ms: 0,
+            last_logged_values: [f32::NAN; NUM_PARAMETERS],
+            watch_filter: ArrayString::new(),
         }
     }
 
@@ -115,6 +153,8 @@ impl MainState {
 
             info!("-!- ipdmrust running");
         }
+
+        self.log_parameters(hw);
 
         self.last_millis = millis;
         self.update_counter += 1;
@@ -193,13 +233,14 @@ impl MainState {
             )
         );
 
-        self.request_wakeup_and_main_contactor =
+        get_parameter(ParameterId::ReqWakeupAndContactor).set_value(if (
                 ignition_input ||
                 get_parameter(ParameterId::ActivateEvse).value > 0.5 ||
                 (enough_soc_for_remote_operations && (
                     get_parameter(ParameterId::HvacRequested).value > 0.5 ||
                     daily_wakeup
-                ));
+                ))
+            ) { 1.0 } else { 0.0 }, hw.millis());
     }
 
     fn update_charging(&mut self, hw: &mut dyn HardwareInterface) {
@@ -265,21 +306,20 @@ impl MainState {
             }
         };
 
-        self.request_heater_power_percent = if
-            !heating_needed ||
-            get_parameter(ParameterId::HeaterT).value.is_nan() ||
-            get_parameter(ParameterId::MainContactor).value < 0.5 ||
-            get_parameter(ParameterId::BmsMaxDischargeCurrent).value < 50.0
-        {
-            0.0
-        } else if get_parameter(ParameterId::HeaterT).value < target_temperature - 5.0 {
-            100.0
-        } else if get_parameter(ParameterId::HeaterT).value < target_temperature {
-            50.0
-        } else {
-            0.0
-        };
-        info!("request_heater_power_percent = {:?}", self.request_heater_power_percent);
+        get_parameter(ParameterId::ReqHeaterPowerPercent).set_value(if
+                !heating_needed ||
+                get_parameter(ParameterId::HeaterT).value.is_nan() ||
+                get_parameter(ParameterId::MainContactor).value < 0.5 ||
+                get_parameter(ParameterId::BmsMaxDischargeCurrent).value < 50.0
+            {
+                0.0
+            } else if get_parameter(ParameterId::HeaterT).value < target_temperature - 5.0 {
+                100.0
+            } else if get_parameter(ParameterId::HeaterT).value < target_temperature {
+                50.0
+            } else {
+                0.0
+            }, hw.millis());
     }
 
     fn update_outputs(&mut self, hw: &mut dyn HardwareInterface) {
@@ -334,15 +374,13 @@ impl MainState {
                     get_parameter(ParameterId::OutlanderHeaterT).value > 30.0
                 )
             );
-
-            info!("MainContactor: {:?}", get_parameter(ParameterId::MainContactor).value);
         }
 
         // Wakeup line
         // This powers inverter_controller and BMS
         hw.set_digital_output(DigitalOutput::Wakeup,
                 ignition_input ||
-                self.request_wakeup_and_main_contactor ||
+                get_parameter(ParameterId::ReqWakeupAndContactor).value > 0.5 ||
                 get_parameter(ParameterId::Precharging).value > 0.5 ||
                 get_parameter(ParameterId::MainContactor).value > 0.5 ||
                 get_parameter(ParameterId::ActivateEvse).value > 0.5 ||
@@ -375,7 +413,7 @@ impl MainState {
                 false
             } else {
                 ignition_input ||
-                self.request_wakeup_and_main_contactor ||
+                get_parameter(ParameterId::ReqWakeupAndContactor).value > 0.5 ||
                 get_parameter(ParameterId::Precharging).value > 0.5 ||
                 get_parameter(ParameterId::MainContactor).value > 0.5 ||
                 get_parameter(ParameterId::ActivateEvse).value > 0.5 ||
@@ -487,9 +525,9 @@ impl MainState {
 
         {
             // Outlander heater control
-            let requested_power_command = if self.request_heater_power_percent > 70.0 {
+            let requested_power_command = if get_parameter(ParameterId::ReqHeaterPowerPercent).value > 70.0 {
                 0xa2
-            } else if self.request_heater_power_percent > 30.0 {
+            } else if get_parameter(ParameterId::ReqHeaterPowerPercent).value > 30.0 {
                 0x32
             } else {
                 0
@@ -544,7 +582,8 @@ impl MainState {
             // * Send AcObcState and enable parameters to Foccci so that it can
             //   enable EVSE state C for AC charging
 
-            let request_main_contactor: bool = self.request_wakeup_and_main_contactor;
+            let request_main_contactor: bool =
+                    get_parameter(ParameterId::ReqWakeupAndContactor).value > 0.5;
 
             let request_inverter_disable: bool =
                     get_parameter(ParameterId::FoccciPlugPresent).value >= 0.5;
@@ -631,6 +670,52 @@ impl MainState {
         ));
     }
 
+    fn log_parameters(&mut self, hw: &mut dyn HardwareInterface) {
+        for param in get_parameters() {
+            if param.log_threshold.is_nan() {
+                continue;
+            }
+            if (param.value.is_nan() && self.last_logged_values[param.id].is_nan()) {
+                continue;
+            }
+            if (param.value - self.last_logged_values[param.id]).abs() < param.log_threshold {
+                continue;
+            }
+            if !self.watch_filter.is_empty() &&
+                    !string_contains_case_insensitive(param.display_name, &self.watch_filter) {
+                continue;
+            }
+            info!("* {:>18}: {: >4.*} {}",
+                    param.display_name,
+                    param.decimals as usize,
+                    param.value,
+                    param.unit);
+            self.last_logged_values[param.id] = param.value;
+        }
+    }
+
+    fn print_parameters(&mut self, hw: &mut dyn HardwareInterface) {
+        for param in get_parameters() {
+            info!("* {:>18}: {: >4.*} {}",
+                    param.display_name,
+                    param.decimals as usize,
+                    param.value,
+                    param.unit);
+        }
+    }
+
+    fn print_parameters_filtered(&mut self, hw: &mut dyn HardwareInterface, filter: &str) {
+        for param in get_parameters() {
+            if string_contains_case_insensitive(param.display_name, filter) {
+                info!("* {:>18}: {: >4.*} {}",
+                        param.display_name,
+                        param.decimals as usize,
+                        param.value,
+                        param.unit);
+            }
+        }
+    }
+
     pub fn on_console_command(&mut self, command: &str, hw: &mut dyn HardwareInterface) -> bool {
         if command == "reboot" {
             hw.reboot();
@@ -648,6 +733,21 @@ impl MainState {
                 if self.log_can { "enabled" } else { "disabled" }
             );
             true
+        } else if command == "print" || command == "p" {
+            self.print_parameters(hw);
+            true
+        } else if command.starts_with("print ") || command.starts_with("p ") {
+            let filter = get_single_arg(command);
+            self.print_parameters_filtered(hw, filter);
+            true
+        } else if command.starts_with("watch ") || command.starts_with("w ") {
+            let filter = get_single_arg(command);
+            self.watch_filter.clear();
+            self.watch_filter.push_str(filter);
+            true
+        } else if command == "clear" || command == "c" {
+            self.watch_filter.clear();
+            true
         } else {
             false
         }
@@ -657,6 +757,10 @@ impl MainState {
         info!("  dfu  - Activate DFU mode");
         info!("  panic  - Call panic!()");
         info!("  log can  - Enable logging of CAN messages on console");
+        info!("  print | p - Print all parameter values");
+        info!("  print | p <filter> - Print parameter values, filter by name");
+        info!("  watch | w <filter> - Set watch filter");
+        info!("  clear | c - Clear watch filter");
     }
 
     pub fn on_can(&mut self, frame: bxcan::Frame) {

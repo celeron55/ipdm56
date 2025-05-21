@@ -5,11 +5,13 @@ define_parameters! {
     TicksMs {
         display_name: "Ticks",
         unit: "ms",
+        log_threshold: f32::NAN,
     },
     AuxVoltage {
         display_name: "Aux battery",
         decimals: 2,
         unit: "V",
+        log_threshold: 0.1,
     },
     BatteryTMin {
         display_name: "Bat T min",
@@ -40,6 +42,7 @@ define_parameters! {
             }),
             scale: 0.01,
         },
+        log_threshold: 0.1,
     },
     BatteryVMax {
         display_name: "Bat V max",
@@ -52,6 +55,7 @@ define_parameters! {
             }),
             scale: 0.01,
         },
+        log_threshold: 0.1,
     },
     Soc {
         display_name: "SoC",
@@ -120,6 +124,14 @@ define_parameters! {
         display_name: "PcbT",
         decimals: 1,
         unit: "degC",
+    },
+    ReqWakeupAndContactor {
+        display_name: "ReqWakeupAndContactor",
+        unit: "",
+    },
+    ReqHeaterPowerPercent {
+        display_name: "ReqHeaterPowerPercent",
+        unit: "%",
     },
     MainContactor {
         display_name: "Main contactor",
