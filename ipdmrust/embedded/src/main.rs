@@ -1014,11 +1014,14 @@ mod rtic_app {
             // random amount of time. Thus, we are doing it this way.
 
             // Vbat (with scaling and lowpass filtering)
+            // NOTE: This doesn't properly correspond to the 10k/100k resistor
+            // divider and 3.3V reference voltage, but for some reason this
+            // gives a better result than 0.008864
             let adc_result_vbat =
                 cx.local
                     .adc1
                     .convert(cx.local.adc_pa3, SampleTime::Cycles_480) as f32
-                    * 0.008864;
+                    * 0.009385;
             cx.shared.adc_result_vbat.lock(|v| *v = *v * 0.98 + adc_result_vbat * 0.02);
 
             // PcbT (with conversion and lowpass filtering)
