@@ -571,7 +571,8 @@ mod rtic_app {
 
         let mut wakeup_output_pin = gpioa.pa15.into_push_pull_output();
         let mut peripherals_enable_pin = gpiod.pd10.into_push_pull_output();
-        peripherals_enable_pin.set_low();
+        // This enables RS232 transmit and 5V external output
+        peripherals_enable_pin.set_high();
 
         let mut hout1_pin = gpioe.pe0.into_push_pull_output();
         let mut hout2_pin = gpioe.pe1.into_push_pull_output();
