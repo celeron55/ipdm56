@@ -885,8 +885,6 @@ mod rtic_app {
     )]
     fn idle(mut cx: idle::Context) -> ! {
         loop {
-            short_busywait();
-            //cx.shared.debug_pin.lock(|pin| { pin.toggle(); });
         }
     }
 
