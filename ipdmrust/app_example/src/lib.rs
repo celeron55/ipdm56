@@ -505,7 +505,7 @@ impl MainState {
             let current2 = (hw.get_analog_input(AnalogInput::Current2) * 256.0) as u16;
             let current3 = (hw.get_analog_input(AnalogInput::Current3) * 256.0) as u16;
             let current4 = (hw.get_analog_input(AnalogInput::Current4) * 256.0) as u16;
-            let currentL = (hw.get_analog_input(AnalogInput::CurrentL) * 256.0) as u16;
+            let currentL = (hw.get_analog_input(AnalogInput::CurrentL) * (256.0 / 3.0)) as u16;
 
             let mut data = [0u8; 8];
             let mut bits = data.view_bits_mut::<Msb0>();
