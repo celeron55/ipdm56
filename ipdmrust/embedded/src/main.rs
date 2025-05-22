@@ -528,10 +528,10 @@ mod rtic_app {
         let clocks = rcc
             .cfgr
             .use_hse(8.MHz()) // Use external crystal (HSE)
-            .hclk(84.MHz())
+            .hclk(42.MHz())
             .pclk1(42.MHz())
-            .pclk2(84.MHz())
-            .sysclk(84.MHz()) // Set system clock (SYSCLK)
+            .pclk2(42.MHz())
+            .sysclk(42.MHz()) // Set system clock (SYSCLK)
             .freeze(); // Apply the configuration
 
         let mut syscfg = cx.device.SYSCFG.constrain();
@@ -596,7 +596,7 @@ mod rtic_app {
         // SysTick
 
         let systick_token = rtic_monotonics::create_systick_token!();
-        Systick::start(cx.core.SYST, 84_000_000, systick_token); // Eats SYST peripheral
+        Systick::start(cx.core.SYST, 42_000_000, systick_token); // Eats SYST peripheral
 
         // Software utilities
 
