@@ -885,6 +885,10 @@ mod rtic_app {
     )]
     fn idle(mut cx: idle::Context) -> ! {
         loop {
+            // Wait For Interrupt is used instead of a busy-wait loop to allow MCU to sleep
+            // between interrupts
+            // https://developer.arm.com/documentation/ddi0406/c/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/WFI
+            rtic::export::wfi()
         }
     }
 
