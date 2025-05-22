@@ -818,6 +818,10 @@ mod rtic_app {
             lout6_pin,
         };
 
+        // Set the ARM SLEEPONEXIT bit to go to sleep after handling interrupts
+        // See https://developer.arm.com/docs/100737/0100/power-management/sleep-mode/sleep-on-exit-bit
+        cx.core.SCB.set_sleeponexit();
+
         // Schedule tasks
 
         logic_task::spawn().ok();
