@@ -3,6 +3,19 @@ iPDM56
 
 News
 ----
+2025-05-23:
+iPDM56 v2.0 hardware was developed and ordered for testing at the beginning of
+the year, and now I have software running on it, installed in a previously EV
+converted car.
+
+Make sure to check the new additions to this repo - there are schematics,
+layouts and even photos.
+
+Also check out the UI8D repo: https://github.com/celeron55/ui8d
+
+The 2.0 board has enough bugs and quirks that I'll have to design version 2.1
+before I'll let anyone have their hands on it.
+
 2023-04-07:
 A small issue with the boards was diagnosed. The bug was documented and the
 basics were tested.
@@ -37,7 +50,11 @@ Please check the README.md of your chosen hardware version in its subdirectory.
 The software
 ------------
 A GPL 3 licensed utility library and example code is available in the `ipdmsw`
-subdirectory.
+subdirectory. These are made in Arduino C++ and support the v1 version of the
+board.
+
+A GPL 3 licensed utility library and example code is available in the `ipdmrust`
+subdirectory. These are made in Rust and support the v2 version of the board.
 
 The product
 -----------
