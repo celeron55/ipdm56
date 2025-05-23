@@ -1027,7 +1027,7 @@ mod rtic_app {
                 cx.local
                     .adc1
                     .convert(cx.local.adc_pa3, SampleTime::Cycles_480) as f32
-                    * 0.009385;
+                    * 0.00882;
             cx.shared.adc_result_vbat.lock(|v| *v = *v * 0.98 + adc_result_vbat * 0.02);
 
             // PcbT (with conversion and lowpass filtering)
