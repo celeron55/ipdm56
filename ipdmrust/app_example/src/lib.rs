@@ -444,6 +444,7 @@ impl MainState {
             // Send charge completion voltage setting to BMS
             let old_value: u16 = get_parameter(
                     ParameterId::BmsChargeCompleteVoltageSetting).value as u16;
+            // TODO: Allow configuring this at runtime
             let new_value: u16 = 4120;
             if old_value != new_value {
                 self.send_setting_frame(hw, 0x120, 0, old_value, new_value);
@@ -468,6 +469,8 @@ impl MainState {
             let m4 = (hw.get_analog_input(AnalogInput::M4) * 128.0) as u16;
             let m5 = (hw.get_analog_input(AnalogInput::M5) * 128.0) as u16;
             let m6 = (hw.get_analog_input(AnalogInput::M6) * 128.0) as u16;
+
+            let vaux = (get_parameter(ParameterId::AuxVoltage).value * 128.0) as u16;
 
             let mut data = [0u8; 8];
             let mut bits = data.view_bits_mut::<Msb0>();
@@ -494,6 +497,8 @@ impl MainState {
             let mut bits = data.view_bits_mut::<Msb0>();
             bits[0..12].store_be(m5);
             bits[12..24].store_be(m6);
+            // ...
+            bits[52..64].store_be(vaux);
 
             self.send_normal_frame(hw, 0x205, &data);
         }
