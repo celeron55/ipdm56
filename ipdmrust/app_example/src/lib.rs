@@ -11,13 +11,13 @@ pub extern crate log;
 pub extern crate profont;
 
 use arrayvec::ArrayString;
+use bitvec::prelude::*;
 use bxcan::StandardId;
 use fixedstr::str_format;
 use int_enum::IntEnum;
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
 use ringbuffer::RingBuffer;
-use bitvec::prelude::*;
 
 fn string_contains_case_insensitive(haystack: &str, needle: &str) -> bool {
     if needle.is_empty() || haystack.len() < needle.len() {
@@ -31,7 +31,9 @@ fn string_contains_case_insensitive(haystack: &str, needle: &str) -> bool {
         if haystack_bytes[i].to_ascii_lowercase() == needle_bytes[0].to_ascii_lowercase() {
             let mut matches = true;
             for j in 1..needle.len() {
-                if haystack_bytes[i + j].to_ascii_lowercase() != needle_bytes[j].to_ascii_lowercase() {
+                if haystack_bytes[i + j].to_ascii_lowercase()
+                    != needle_bytes[j].to_ascii_lowercase()
+                {
                     matches = false;
                     break;
                 }
@@ -173,14 +175,17 @@ impl MainState {
 
     fn update_parameters(&mut self, hw: &mut dyn HardwareInterface) {
         get_parameter(ParameterId::TicksMs).set_value(hw.millis() as f32, hw.millis());
-        get_parameter(ParameterId::AuxVoltage).set_value(hw.get_analog_input(AnalogInput::AuxVoltage), hw.millis());
-        get_parameter(ParameterId::PcbT).set_value(hw.get_analog_input(AnalogInput::PcbT), hw.millis());
+        get_parameter(ParameterId::AuxVoltage)
+            .set_value(hw.get_analog_input(AnalogInput::AuxVoltage), hw.millis());
+        get_parameter(ParameterId::PcbT)
+            .set_value(hw.get_analog_input(AnalogInput::PcbT), hw.millis());
 
-        if !get_parameter(ParameterId::Soc).value.is_nan() &&
-                get_parameter(ParameterId::Soc).value >= 0.5 &&
-                get_parameter(ParameterId::Soc).value <= 100.5 {
-            get_parameter(ParameterId::LastSeenSoc).set_value(
-                    get_parameter(ParameterId::Soc).value, hw.millis());
+        if !get_parameter(ParameterId::Soc).value.is_nan()
+            && get_parameter(ParameterId::Soc).value >= 0.5
+            && get_parameter(ParameterId::Soc).value <= 100.5
+        {
+            get_parameter(ParameterId::LastSeenSoc)
+                .set_value(get_parameter(ParameterId::Soc).value, hw.millis());
         }
 
         self.timeout_parameters(hw);
@@ -209,38 +214,37 @@ impl MainState {
         let ignition_input = hw.get_digital_input(DigitalInput::Ignition);
 
         let enough_soc_for_remote_operations =
-                get_parameter(ParameterId::LastSeenSoc).value.is_nan() ||
-                        get_parameter(ParameterId::LastSeenSoc).value >= 10.0;
+            get_parameter(ParameterId::LastSeenSoc).value.is_nan()
+                || get_parameter(ParameterId::LastSeenSoc).value >= 10.0;
 
         if get_parameter(ParameterId::AuxVoltage).value < 11.8 {
             self.last_aux_low_ms = hw.millis();
         }
 
         // This is to charge the 12V battery
-        let daily_wakeup = (
-            hw.millis() > (1000 * 3600 * 1)
-            &&
-            (
+        let daily_wakeup = (hw.millis() > (1000 * 3600 * 1)
+            && (
                 // Always every 24h for 30min
                 hw.millis() % (1000 * 3600 * 24) < (1000 * 60 * 30)
-                ||
-                (
-                    // Every 4h for 30min if 12V battery is low
-                    hw.millis() % (1000 * 3600 * 4) < (1000 * 60 * 30)
-                    &&
-                    hw.millis() - self.last_aux_low_ms < 1000 * 3600
-                )
-            )
-        );
+                    || (
+                        // Every 4h for 30min if 12V battery is low
+                        hw.millis() % (1000 * 3600 * 4) < (1000 * 60 * 30)
+                            && hw.millis() - self.last_aux_low_ms < 1000 * 3600
+                    )
+            ));
 
-        get_parameter(ParameterId::ReqWakeupAndContactor).set_value(if (
-                ignition_input ||
-                get_parameter(ParameterId::ActivateEvse).value > 0.5 ||
-                (enough_soc_for_remote_operations && (
-                    get_parameter(ParameterId::HvacRequested).value > 0.5 ||
-                    daily_wakeup
-                ))
-            ) { 1.0 } else { 0.0 }, hw.millis());
+        get_parameter(ParameterId::ReqWakeupAndContactor).set_value(
+            if (ignition_input
+                || get_parameter(ParameterId::ActivateEvse).value > 0.5
+                || (enough_soc_for_remote_operations
+                    && (get_parameter(ParameterId::HvacRequested).value > 0.5 || daily_wakeup)))
+            {
+                1.0
+            } else {
+                0.0
+            },
+            hw.millis(),
+        );
     }
 
     fn update_charging(&mut self, hw: &mut dyn HardwareInterface) {
@@ -252,65 +256,55 @@ impl MainState {
             charge_current += get_parameter(ParameterId::ObcDcc).value;
         }
 
-        if get_parameter(ParameterId::BatteryVMax).value >= 4.10 &&
-                charge_current < 2.0 {
+        if get_parameter(ParameterId::BatteryVMax).value >= 4.10 && charge_current < 2.0 {
             get_parameter(ParameterId::ChargeComplete).set_value(1.0, hw.millis());
         } else if get_parameter(ParameterId::BatteryVMax).value < 4.04 {
             get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
         }
 
         // ActivateEvse applies to both DC and AC charging
-        let activate_evse =
-                get_parameter(ParameterId::FoccciCPPWM).value >= 1.0 &&
-                get_parameter(ParameterId::FoccciCPPWM).value <= 96.0 &&
-                get_parameter(ParameterId::ChargeComplete).value < 0.5;
+        let activate_evse = get_parameter(ParameterId::FoccciCPPWM).value >= 1.0
+            && get_parameter(ParameterId::FoccciCPPWM).value <= 96.0
+            && get_parameter(ParameterId::ChargeComplete).value < 0.5;
 
-        get_parameter(ParameterId::ActivateEvse).set_value(
-                if activate_evse { 1.0 } else { 0.0 }, hw.millis());
+        get_parameter(ParameterId::ActivateEvse)
+            .set_value(if activate_evse { 1.0 } else { 0.0 }, hw.millis());
 
         // ActivateObc applies only to AC charging and ends up instructing
         // Foccci into AC charging mode
-        let activate_obc =
-                get_parameter(ParameterId::FoccciCPPWM).value >= 8.0 &&
-                get_parameter(ParameterId::FoccciCPPWM).value <= 96.0 &&
-                get_parameter(ParameterId::ChargeComplete).value < 0.5;
+        let activate_obc = get_parameter(ParameterId::FoccciCPPWM).value >= 8.0
+            && get_parameter(ParameterId::FoccciCPPWM).value <= 96.0
+            && get_parameter(ParameterId::ChargeComplete).value < 0.5;
 
-        get_parameter(ParameterId::ActivateObc).set_value(
-                if activate_evse { 1.0 } else { 0.0 }, hw.millis());
+        get_parameter(ParameterId::ActivateObc)
+            .set_value(if activate_evse { 1.0 } else { 0.0 }, hw.millis());
     }
 
     fn update_heater(&mut self, hw: &mut dyn HardwareInterface) {
-        let heating_needed =
-                (
-                    hw.get_digital_input(DigitalInput::Ignition)
-                    ||
-                    get_parameter(ParameterId::HvacRequested).value > 0.5
-                )
-                &&
-                (
-                    get_parameter(ParameterId::CabinT).value.is_nan()
-                    ||
-                    get_parameter(ParameterId::CabinT).value < 28.0
-                );
+        let heating_needed = (hw.get_digital_input(DigitalInput::Ignition)
+            || get_parameter(ParameterId::HvacRequested).value > 0.5)
+            && (get_parameter(ParameterId::CabinT).value.is_nan()
+                || get_parameter(ParameterId::CabinT).value < 28.0);
 
         let target_temperature = {
             if get_parameter(ParameterId::CabinT).value.is_nan() {
                 60.0
             } else if get_parameter(ParameterId::CabinT).value < 10.0 {
                 60.0
-            } else if get_parameter(ParameterId::CabinT).value < 28.0 &&
-                    hw.get_digital_input(DigitalInput::Ignition) {
+            } else if get_parameter(ParameterId::CabinT).value < 28.0
+                && hw.get_digital_input(DigitalInput::Ignition)
+            {
                 60.0
             } else {
                 60.0 - (get_parameter(ParameterId::CabinT).value - 10.0) * 1.8
             }
         };
 
-        get_parameter(ParameterId::ReqHeaterPowerPercent).set_value(if
-                !heating_needed ||
-                get_parameter(ParameterId::HeaterT).value.is_nan() ||
-                get_parameter(ParameterId::MainContactor).value < 0.5 ||
-                get_parameter(ParameterId::BmsMaxDischargeCurrent).value < 50.0
+        get_parameter(ParameterId::ReqHeaterPowerPercent).set_value(
+            if !heating_needed
+                || get_parameter(ParameterId::HeaterT).value.is_nan()
+                || get_parameter(ParameterId::MainContactor).value < 0.5
+                || get_parameter(ParameterId::BmsMaxDischargeCurrent).value < 50.0
             {
                 0.0
             } else if get_parameter(ParameterId::HeaterT).value < target_temperature - 5.0 {
@@ -319,7 +313,9 @@ impl MainState {
                 50.0
             } else {
                 0.0
-            }, hw.millis());
+            },
+            hw.millis(),
+        );
     }
 
     fn update_outputs(&mut self, hw: &mut dyn HardwareInterface) {
@@ -340,51 +336,52 @@ impl MainState {
             };
 
             // Update battery solenoids
-            let heat_battery = (
-                    get_parameter(ParameterId::BatteryTMin).value < heat_battery_to_t &&
-                    get_parameter(ParameterId::BatteryTMax).value < 30.0 &&
-                    (
-                        // Only allow 100% duty cycle if battery < 3°C or
-                        // cabin > 15°C
-                        get_parameter(ParameterId::BatteryTMin).value < 3.0
-                        ||
-                        get_parameter(ParameterId::CabinT).value > 15.0
-                        ||
-                        hw.millis() % 120000 < 60000 // 50% duty cycle
-                    )
+            let heat_battery = (get_parameter(ParameterId::BatteryTMin).value < heat_battery_to_t
+                && get_parameter(ParameterId::BatteryTMax).value < 30.0
+                && (
+                    // Only allow 100% duty cycle if battery < 3°C or
+                    // cabin > 15°C
+                    get_parameter(ParameterId::BatteryTMin).value < 3.0
+                        || get_parameter(ParameterId::CabinT).value > 15.0
+                        || hw.millis() % 120000 < 60000
+                    // 50% duty cycle
+                ));
+            let cool_battery = get_parameter(ParameterId::BatteryTMin).value > 23.0
+                && get_parameter(ParameterId::BatteryTMax).value > 30.0;
+            hw.set_digital_output(
+                BatteryNeutralSolenoid,
+                allow_solenoids && !cool_battery && !heat_battery,
             );
-            let cool_battery = get_parameter(ParameterId::BatteryTMin).value > 23.0 &&
-                    get_parameter(ParameterId::BatteryTMax).value > 30.0;
-            hw.set_digital_output(BatteryNeutralSolenoid,
-                    allow_solenoids && !cool_battery && !heat_battery);
-            hw.set_digital_output(BatteryHeatSolenoid,
-                    allow_solenoids && heat_battery);
+            hw.set_digital_output(BatteryHeatSolenoid, allow_solenoids && heat_battery);
 
             // Update cooling fan
             // TODO: Trigger on inverter, motor and OBC temperature also
-            hw.set_digital_output(CoolingFan, allow_solenoids &&
-                    get_parameter(ParameterId::BatteryTMax).value > 35.0);
+            hw.set_digital_output(
+                CoolingFan,
+                allow_solenoids && get_parameter(ParameterId::BatteryTMax).value > 35.0,
+            );
 
             // Update heating loop pump
-            hw.set_digital_output(HeatLoopPump,
-                allow_solenoids &&
-                (
-                    get_parameter(ParameterId::OutlanderHeaterHeating).value > 0.5 ||
-                    get_parameter(ParameterId::OutlanderHeaterPowerPercent).value > 0.5 ||
-                    get_parameter(ParameterId::OutlanderHeaterT).value > 30.0
-                )
+            hw.set_digital_output(
+                HeatLoopPump,
+                allow_solenoids
+                    && (get_parameter(ParameterId::OutlanderHeaterHeating).value > 0.5
+                        || get_parameter(ParameterId::OutlanderHeaterPowerPercent).value > 0.5
+                        || get_parameter(ParameterId::OutlanderHeaterT).value > 30.0),
             );
         }
 
         // Wakeup line
         // This powers inverter_controller and BMS
-        hw.set_digital_output(DigitalOutput::Wakeup,
-                ignition_input ||
-                get_parameter(ParameterId::ReqWakeupAndContactor).value > 0.5 ||
-                get_parameter(ParameterId::Precharging).value > 0.5 ||
-                get_parameter(ParameterId::MainContactor).value > 0.5 ||
-                get_parameter(ParameterId::ActivateEvse).value > 0.5 ||
-                get_parameter(ParameterId::HvacRequested).value > 0.5);
+        hw.set_digital_output(
+            DigitalOutput::Wakeup,
+            ignition_input
+                || get_parameter(ParameterId::ReqWakeupAndContactor).value > 0.5
+                || get_parameter(ParameterId::Precharging).value > 0.5
+                || get_parameter(ParameterId::MainContactor).value > 0.5
+                || get_parameter(ParameterId::ActivateEvse).value > 0.5
+                || get_parameter(ParameterId::HvacRequested).value > 0.5,
+        );
 
         // Update OBC/DCDC 12V supply
         // * Enable this when:
@@ -397,10 +394,11 @@ impl MainState {
         // * Also toggle this for 5 seconds every 30 minutes if the DC/DC is not
         //   running while the main contactor is closed
         hw.set_digital_output(ObcDcdc12VSupply, {
-            if self.last_millis > 60000 &&
-                    self.last_millis - self.ignition_last_on_ms >= 1000 &&
-                    self.last_millis - self.ignition_last_on_ms <= 6000 &&
-                    get_parameter(ParameterId::ObcDcc).value <= 0.1 {
+            if self.last_millis > 60000
+                && self.last_millis - self.ignition_last_on_ms >= 1000
+                && self.last_millis - self.ignition_last_on_ms <= 6000
+                && get_parameter(ParameterId::ObcDcc).value <= 0.1
+            {
                 false
             } else if self.last_millis > 120000 &&
                     // De-synced by 30s from wakeups happening on millis() % N,
@@ -409,41 +407,51 @@ impl MainState {
                     get_parameter(ParameterId::AuxVoltage).value <= 12.5 &&
                     get_parameter(ParameterId::DcdcStatus).value != 0x22 as f32 &&
                     get_parameter(ParameterId::Precharging).value < 0.5 &&
-                    get_parameter(ParameterId::MainContactor).value > 0.5 {
+                    get_parameter(ParameterId::MainContactor).value > 0.5
+            {
                 false
             } else {
-                ignition_input ||
-                get_parameter(ParameterId::ReqWakeupAndContactor).value > 0.5 ||
-                get_parameter(ParameterId::Precharging).value > 0.5 ||
-                get_parameter(ParameterId::MainContactor).value > 0.5 ||
-                get_parameter(ParameterId::ActivateEvse).value > 0.5 ||
-                get_parameter(ParameterId::HvacRequested).value > 0.5
+                ignition_input
+                    || get_parameter(ParameterId::ReqWakeupAndContactor).value > 0.5
+                    || get_parameter(ParameterId::Precharging).value > 0.5
+                    || get_parameter(ParameterId::MainContactor).value > 0.5
+                    || get_parameter(ParameterId::ActivateEvse).value > 0.5
+                    || get_parameter(ParameterId::HvacRequested).value > 0.5
             }
         });
 
         // Update DC/DC enable
-        hw.set_digital_output(DcdcEnable,
-                get_parameter(ParameterId::MainContactor).value > 0.5);
+        hw.set_digital_output(
+            DcdcEnable,
+            get_parameter(ParameterId::MainContactor).value > 0.5,
+        );
 
         // Update battery pump
-        hw.set_digital_output(BatteryPump,
-                get_parameter(ParameterId::MainContactor).value > 0.5);
+        hw.set_digital_output(
+            BatteryPump,
+            get_parameter(ParameterId::MainContactor).value > 0.5,
+        );
 
         // Update brake booster
         hw.set_digital_output(BrakeBooster, ignition_input);
 
         // Update CP PWM to OBC
         // (PWM value is received from Foccci)
-        hw.set_pwm_output(CpPwmToObc,
-                if get_parameter(ParameterId::FoccciCPPWM).value.is_nan() { 0.00 }
-                else { get_parameter(ParameterId::FoccciCPPWM).value * 0.01 });
+        hw.set_pwm_output(
+            CpPwmToObc,
+            if get_parameter(ParameterId::FoccciCPPWM).value.is_nan() {
+                0.00
+            } else {
+                get_parameter(ParameterId::FoccciCPPWM).value * 0.01
+            },
+        );
     }
 
     fn send_can_500ms(&mut self, hw: &mut dyn HardwareInterface) {
         {
             // Send charge completion voltage setting to BMS
-            let old_value: u16 = get_parameter(
-                    ParameterId::BmsChargeCompleteVoltageSetting).value as u16;
+            let old_value: u16 =
+                get_parameter(ParameterId::BmsChargeCompleteVoltageSetting).value as u16;
             // TODO: Allow configuring this at runtime
             let new_value: u16 = 4120;
             if old_value != new_value {
@@ -475,14 +483,14 @@ impl MainState {
             let mut data = [0u8; 8];
             let mut bits = data.view_bits_mut::<Msb0>();
             bits[0..8].store_be(
-                if ignition { (1<<0) } else { 0 } |
-                if m7 { (1<<1) } else { 0 } |
-                if m8 { (1<<2) } else { 0 } |
-                if m9 { (1<<3) } else { 0 } |
-                if m10 { (1<<4) } else { 0 } |
-                if m11 { (1<<5) } else { 0 } |
-                if m12 { (1<<6) } else { 0 } |
-                if m13 { (1<<7) } else { 0 }
+                if ignition { (1 << 0) } else { 0 }
+                    | if m7 { (1 << 1) } else { 0 }
+                    | if m8 { (1 << 2) } else { 0 }
+                    | if m9 { (1 << 3) } else { 0 }
+                    | if m10 { (1 << 4) } else { 0 }
+                    | if m11 { (1 << 5) } else { 0 }
+                    | if m12 { (1 << 6) } else { 0 }
+                    | if m13 { (1 << 7) } else { 0 },
             );
             bits[8..16].store_be(0);
             // 12 bits for each analog value (big endian)
@@ -530,18 +538,28 @@ impl MainState {
 
         {
             // Outlander heater control
-            let requested_power_command = if get_parameter(ParameterId::ReqHeaterPowerPercent).value > 70.0 {
-                0xa2
-            } else if get_parameter(ParameterId::ReqHeaterPowerPercent).value > 30.0 {
-                0x32
-            } else {
-                0
-            };
-            self.send_normal_frame(hw, 0x188, &[
-                0x03, 0x50,
-                requested_power_command,
-                0x4D, 0x00, 0x00, 0x00, 0x00
-            ]);
+            let requested_power_command =
+                if get_parameter(ParameterId::ReqHeaterPowerPercent).value > 70.0 {
+                    0xa2
+                } else if get_parameter(ParameterId::ReqHeaterPowerPercent).value > 30.0 {
+                    0x32
+                } else {
+                    0
+                };
+            self.send_normal_frame(
+                hw,
+                0x188,
+                &[
+                    0x03,
+                    0x50,
+                    requested_power_command,
+                    0x4D,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                ],
+            );
         }
 
         {
@@ -553,27 +571,40 @@ impl MainState {
 
             let ac_v = get_parameter(ParameterId::AcVoltage).value;
             let dc_v = get_parameter(ParameterId::ObcDcv).value;
-            let dc_current_request_Ax10: u8 =
-                if get_parameter(ParameterId::MainContactor).value > 0.5 &&
-                        get_parameter(ParameterId::ActivateEvse).value > 0.5 {
-                    let ac_request_DCA = ac_v / dc_v * user_current_request_ACA;
-                    let obc_limit_DCA = 12.0;
-                    // TODO: If the heater is operating, allow that much extra
-                    //       charging current so that it's possible to heat the
-                    //       battery using AC power
-                    let bms_limit_DCA = get_parameter(ParameterId::BmsMaxChargeCurrent).value;
-                    (ac_request_DCA.min(obc_limit_DCA).min(bms_limit_DCA).max(0.0) * 10.0) as u8
-                } else {
-                    0
-                };
+            let dc_current_request_Ax10: u8 = if get_parameter(ParameterId::MainContactor).value
+                > 0.5
+                && get_parameter(ParameterId::ActivateEvse).value > 0.5
+            {
+                let ac_request_DCA = ac_v / dc_v * user_current_request_ACA;
+                let obc_limit_DCA = 12.0;
+                // TODO: If the heater is operating, allow that much extra
+                //       charging current so that it's possible to heat the
+                //       battery using AC power
+                let bms_limit_DCA = get_parameter(ParameterId::BmsMaxChargeCurrent).value;
+                (ac_request_DCA
+                    .min(obc_limit_DCA)
+                    .min(bms_limit_DCA)
+                    .max(0.0)
+                    * 10.0) as u8
+            } else {
+                0
+            };
 
             // Outlander OBC control
-            self.send_normal_frame(hw, 0x286, &[
-                (charge_voltage_setpoint_Vx10 >> 8) as u8,
-                (charge_voltage_setpoint_Vx10 & 0xff) as u8,
-                dc_current_request_Ax10, // DC current, 0.1A / bit
-                0, 0, 0, 0, 0
-            ]);
+            self.send_normal_frame(
+                hw,
+                0x286,
+                &[
+                    (charge_voltage_setpoint_Vx10 >> 8) as u8,
+                    (charge_voltage_setpoint_Vx10 & 0xff) as u8,
+                    dc_current_request_Ax10, // DC current, 0.1A / bit
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ],
+            );
         }
 
         {
@@ -588,16 +619,15 @@ impl MainState {
             //   enable EVSE state C for AC charging
 
             let request_main_contactor: bool =
-                    get_parameter(ParameterId::ReqWakeupAndContactor).value > 0.5;
+                get_parameter(ParameterId::ReqWakeupAndContactor).value > 0.5;
 
             let request_inverter_disable: bool =
-                    get_parameter(ParameterId::FoccciPlugPresent).value >= 0.5;
+                get_parameter(ParameterId::FoccciPlugPresent).value >= 0.5;
 
             let dc_link_voltage_Vx10: u16 =
-                    (get_parameter(ParameterId::ObcDcv).value * 10.0) as u16;
+                (get_parameter(ParameterId::ObcDcv).value * 10.0) as u16;
 
-            let obc_Ax10: u16 =
-                    (get_parameter(ParameterId::ObcDcc).value * 10.0) as u16;
+            let obc_Ax10: u16 = (get_parameter(ParameterId::ObcDcc).value * 10.0) as u16;
 
             let ac_obc_state = if get_parameter(ParameterId::ActivateObc).value > 0.5 {
                 2
@@ -610,24 +640,30 @@ impl MainState {
             let group3oc = hw.get_digital_input(DigitalInput::Group3OC);
             let group4oc = hw.get_digital_input(DigitalInput::Group4OC);
 
-            self.send_normal_frame(hw, 0x200, &[
-                0x00 |
-                    if request_main_contactor { (1<<0) } else { 0 } |
-                    if request_inverter_disable { (1<<3) } else { 0 } |
-                    if ignition_input { (1<<6) } else { 0 } |
-                    (1<<7) /* Foccci.enable (new) */,
-                (dc_link_voltage_Vx10 >> 8) as u8,
-                (dc_link_voltage_Vx10 & 0xff) as u8,
-                (obc_Ax10 >> 8) as u8,
-                (obc_Ax10 & 0xff) as u8,
-                get_parameter(ParameterId::PcbT).value as u8,
-                ac_obc_state /* Foccci.AcObcState (new) */,
-                0x00 |
-                    if group1oc { (1<<0) } else { 0 } |
-                    if group2oc { (1<<1) } else { 0 } |
-                    if group3oc { (1<<2) } else { 0 } |
-                    if group4oc { (1<<3) } else { 0 },
-            ]);
+            self.send_normal_frame(
+                hw,
+                0x200,
+                &[
+                    0x00 | if request_main_contactor { (1 << 0) } else { 0 }
+                        | if request_inverter_disable {
+                            (1 << 3)
+                        } else {
+                            0
+                        }
+                        | if ignition_input { (1 << 6) } else { 0 }
+                        | (1 << 7), /* Foccci.enable (new) */
+                    (dc_link_voltage_Vx10 >> 8) as u8,
+                    (dc_link_voltage_Vx10 & 0xff) as u8,
+                    (obc_Ax10 >> 8) as u8,
+                    (obc_Ax10 & 0xff) as u8,
+                    get_parameter(ParameterId::PcbT).value as u8,
+                    ac_obc_state, /* Foccci.AcObcState (new) */
+                    0x00 | if group1oc { (1 << 0) } else { 0 }
+                        | if group2oc { (1 << 1) } else { 0 }
+                        | if group3oc { (1 << 2) } else { 0 }
+                        | if group4oc { (1 << 3) } else { 0 },
+                ],
+            );
 
             if request_inverter_disable {
                 // For some reason inverter_controller isn't following the value
@@ -642,36 +678,52 @@ impl MainState {
             // Outlander HV status message (for heater and OBC)
             // 10...30ms is fine for this (EV-Omega uses 30ms)
             let activate_evse = get_parameter(ParameterId::ActivateObc).value > 0.5;
-            self.send_normal_frame(hw, 0x285, &[
-                0x00, 0x00,
-                0x14 | if activate_evse { 0xb6 } else { 0 }, // 0xb6 = Activate EVSE (OBC)
-                0x21, 0x90, 0xfe, 0x0c, 0x10
-            ]);
+            self.send_normal_frame(
+                hw,
+                0x285,
+                &[
+                    0x00,
+                    0x00,
+                    0x14 | if activate_evse { 0xb6 } else { 0 }, // 0xb6 = Activate EVSE (OBC)
+                    0x21,
+                    0x90,
+                    0xfe,
+                    0x0c,
+                    0x10,
+                ],
+            );
         }
     }
 
-    fn send_normal_frame(&mut self, hw: &mut dyn HardwareInterface,
-            frame_id: u16, data: &[u8]) {
+    fn send_normal_frame(&mut self, hw: &mut dyn HardwareInterface, frame_id: u16, data: &[u8]) {
         if let Some(frame_data) = bxcan::Data::new(data) {
             hw.send_can(bxcan::Frame::new_data(
                 bxcan::StandardId::new(frame_id).unwrap(),
-                frame_data
+                frame_data,
             ));
         } else {
-            warn!("-!- send_normal_frame(): Invalid data for frame {:?}: {:?}",
-                    frame_id, data);
+            warn!(
+                "-!- send_normal_frame(): Invalid data for frame {:?}: {:?}",
+                frame_id, data
+            );
         }
     }
 
-    fn send_setting_frame(&mut self, hw: &mut dyn HardwareInterface,
-            frame_id: u16, setting_id: u8, old_value: u16, new_value: u16) {
+    fn send_setting_frame(
+        &mut self,
+        hw: &mut dyn HardwareInterface,
+        frame_id: u16,
+        setting_id: u8,
+        old_value: u16,
+        new_value: u16,
+    ) {
         let mut data: [u8; 8] = [0; 8];
         data[0] = setting_id;
         data[1..3].copy_from_slice(&old_value.to_be_bytes());
         data[3..5].copy_from_slice(&new_value.to_be_bytes());
         hw.send_can(bxcan::Frame::new_data(
             bxcan::StandardId::new(frame_id).unwrap(),
-            bxcan::Data::new(&data).unwrap()
+            bxcan::Data::new(&data).unwrap(),
         ));
     }
 
@@ -686,37 +738,35 @@ impl MainState {
             if (param.value - self.last_logged_values[param.id]).abs() < param.log_threshold {
                 continue;
             }
-            if !self.watch_filter.is_empty() &&
-                    !string_contains_case_insensitive(param.display_name, &self.watch_filter) {
+            if !self.watch_filter.is_empty()
+                && !string_contains_case_insensitive(param.display_name, &self.watch_filter)
+            {
                 continue;
             }
-            info!("* {:>18}: {: >4.*} {}",
-                    param.display_name,
-                    param.decimals as usize,
-                    param.value,
-                    param.unit);
+            info!(
+                "* {:>18}: {: >4.*} {}",
+                param.display_name, param.decimals as usize, param.value, param.unit
+            );
             self.last_logged_values[param.id] = param.value;
         }
     }
 
     fn print_parameters(&mut self, hw: &mut dyn HardwareInterface) {
         for param in get_parameters() {
-            info!("* {:>18}: {: >4.*} {}",
-                    param.display_name,
-                    param.decimals as usize,
-                    param.value,
-                    param.unit);
+            info!(
+                "* {:>18}: {: >4.*} {}",
+                param.display_name, param.decimals as usize, param.value, param.unit
+            );
         }
     }
 
     fn print_parameters_filtered(&mut self, hw: &mut dyn HardwareInterface, filter: &str) {
         for param in get_parameters() {
             if string_contains_case_insensitive(param.display_name, filter) {
-                info!("* {:>18}: {: >4.*} {}",
-                        param.display_name,
-                        param.decimals as usize,
-                        param.value,
-                        param.unit);
+                info!(
+                    "* {:>18}: {: >4.*} {}",
+                    param.display_name, param.decimals as usize, param.value, param.unit
+                );
             }
         }
     }

@@ -207,7 +207,7 @@ type Tim4Pwm = hal::timer::PwmHz<
         hal::timer::ChannelBuilder<hal::pac::TIM4, 0, false>, // LCUR1
         hal::timer::ChannelBuilder<hal::pac::TIM4, 1, false>, // SPWM1
         hal::timer::ChannelBuilder<hal::pac::TIM4, 2, false>, // SPWM2
-        //hal::timer::ChannelBuilder<hal::pac::TIM4, 3, false>, // Will be LWPM1 in next version
+                                                              //hal::timer::ChannelBuilder<hal::pac::TIM4, 3, false>, // Will be LWPM1 in next version
     ),
 >;
 
@@ -381,64 +381,64 @@ impl HardwareInterface for HardwareImplementation {
 
     fn set_digital_output(&mut self, output: DigitalOutput, value: bool) {
         let old_value = match output {
-            DigitalOutput::Wakeup => { self.wakeup_output_pin.is_set_high() }
-            DigitalOutput::HOUT1 => { self.hout1_pin.is_set_high() }
-            DigitalOutput::HOUT2 => { self.hout2_pin.is_set_high() }
-            DigitalOutput::HOUT3 => { self.hout3_pin.is_set_high() }
-            DigitalOutput::HOUT4 => { self.hout4_pin.is_set_high() }
-            DigitalOutput::HOUT5 => { self.hout5_pin.is_set_high() }
-            DigitalOutput::HOUT6 => { self.hout6_pin.is_set_high() }
-            DigitalOutput::HOUT7 => { self.hout7_pin.is_set_high() }
-            DigitalOutput::HOUT8 => { self.hout8_pin.is_set_high() }
-            DigitalOutput::HOUT9 => { self.hout9_pin.is_set_high() }
-            DigitalOutput::HOUT10 => { self.hout10_pin.is_set_high() }
-            DigitalOutput::HOUT11 => { self.hout11_pin.is_set_high() }
-            DigitalOutput::HOUT12 => { self.hout12_pin.is_set_high() }
-            DigitalOutput::LOUT1 => { self.lout1_pin.is_set_high() }
-            DigitalOutput::LOUT2 => { self.lout2_pin.is_set_high() }
-            DigitalOutput::LOUT3 => { self.lout3_pin.is_set_high() }
-            DigitalOutput::LOUT4 => { self.lout4_pin.is_set_high() }
-            DigitalOutput::LOUT5 => { self.lout5_pin.is_set_high() }
-            DigitalOutput::LOUT6 => { self.lout6_pin.is_set_high() }
-            // TODO: M* pins
+            DigitalOutput::Wakeup => self.wakeup_output_pin.is_set_high(),
+            DigitalOutput::HOUT1 => self.hout1_pin.is_set_high(),
+            DigitalOutput::HOUT2 => self.hout2_pin.is_set_high(),
+            DigitalOutput::HOUT3 => self.hout3_pin.is_set_high(),
+            DigitalOutput::HOUT4 => self.hout4_pin.is_set_high(),
+            DigitalOutput::HOUT5 => self.hout5_pin.is_set_high(),
+            DigitalOutput::HOUT6 => self.hout6_pin.is_set_high(),
+            DigitalOutput::HOUT7 => self.hout7_pin.is_set_high(),
+            DigitalOutput::HOUT8 => self.hout8_pin.is_set_high(),
+            DigitalOutput::HOUT9 => self.hout9_pin.is_set_high(),
+            DigitalOutput::HOUT10 => self.hout10_pin.is_set_high(),
+            DigitalOutput::HOUT11 => self.hout11_pin.is_set_high(),
+            DigitalOutput::HOUT12 => self.hout12_pin.is_set_high(),
+            DigitalOutput::LOUT1 => self.lout1_pin.is_set_high(),
+            DigitalOutput::LOUT2 => self.lout2_pin.is_set_high(),
+            DigitalOutput::LOUT3 => self.lout3_pin.is_set_high(),
+            DigitalOutput::LOUT4 => self.lout4_pin.is_set_high(),
+            DigitalOutput::LOUT5 => self.lout5_pin.is_set_high(),
+            DigitalOutput::LOUT6 => self.lout6_pin.is_set_high(), // TODO: M* pins
         };
 
         if value != old_value {
-            info!("HardwareImplementation::set_digital_output: {:?} {:?} -> {:?}",
-                    output, old_value, value);
+            info!(
+                "HardwareImplementation::set_digital_output: {:?} {:?} -> {:?}",
+                output, old_value, value
+            );
         }
 
         match output {
-            DigitalOutput::Wakeup => { self.wakeup_output_pin.set_state(value.into()) }
-            DigitalOutput::HOUT1 => { self.hout1_pin.set_state(value.into()) }
-            DigitalOutput::HOUT2 => { self.hout2_pin.set_state(value.into()) }
-            DigitalOutput::HOUT3 => { self.hout3_pin.set_state(value.into()) }
-            DigitalOutput::HOUT4 => { self.hout4_pin.set_state(value.into()) }
-            DigitalOutput::HOUT5 => { self.hout5_pin.set_state(value.into()) }
-            DigitalOutput::HOUT6 => { self.hout6_pin.set_state(value.into()) }
-            DigitalOutput::HOUT7 => { self.hout7_pin.set_state(value.into()) }
-            DigitalOutput::HOUT8 => { self.hout8_pin.set_state(value.into()) }
-            DigitalOutput::HOUT9 => { self.hout9_pin.set_state(value.into()) }
-            DigitalOutput::HOUT10 => { self.hout10_pin.set_state(value.into()) }
-            DigitalOutput::HOUT11 => { self.hout11_pin.set_state(value.into()) }
-            DigitalOutput::HOUT12 => { self.hout12_pin.set_state(value.into()) }
-            DigitalOutput::LOUT1 => { self.lout1_pin.set_state(value.into()) }
-            DigitalOutput::LOUT2 => { self.lout2_pin.set_state(value.into()) }
-            DigitalOutput::LOUT3 => { self.lout3_pin.set_state(value.into()) }
-            DigitalOutput::LOUT4 => { self.lout4_pin.set_state(value.into()) }
-            DigitalOutput::LOUT5 => { self.lout5_pin.set_state(value.into()) }
-            DigitalOutput::LOUT6 => { self.lout6_pin.set_state(value.into()) }
-            // TODO: M* pins
+            DigitalOutput::Wakeup => self.wakeup_output_pin.set_state(value.into()),
+            DigitalOutput::HOUT1 => self.hout1_pin.set_state(value.into()),
+            DigitalOutput::HOUT2 => self.hout2_pin.set_state(value.into()),
+            DigitalOutput::HOUT3 => self.hout3_pin.set_state(value.into()),
+            DigitalOutput::HOUT4 => self.hout4_pin.set_state(value.into()),
+            DigitalOutput::HOUT5 => self.hout5_pin.set_state(value.into()),
+            DigitalOutput::HOUT6 => self.hout6_pin.set_state(value.into()),
+            DigitalOutput::HOUT7 => self.hout7_pin.set_state(value.into()),
+            DigitalOutput::HOUT8 => self.hout8_pin.set_state(value.into()),
+            DigitalOutput::HOUT9 => self.hout9_pin.set_state(value.into()),
+            DigitalOutput::HOUT10 => self.hout10_pin.set_state(value.into()),
+            DigitalOutput::HOUT11 => self.hout11_pin.set_state(value.into()),
+            DigitalOutput::HOUT12 => self.hout12_pin.set_state(value.into()),
+            DigitalOutput::LOUT1 => self.lout1_pin.set_state(value.into()),
+            DigitalOutput::LOUT2 => self.lout2_pin.set_state(value.into()),
+            DigitalOutput::LOUT3 => self.lout3_pin.set_state(value.into()),
+            DigitalOutput::LOUT4 => self.lout4_pin.set_state(value.into()),
+            DigitalOutput::LOUT5 => self.lout5_pin.set_state(value.into()),
+            DigitalOutput::LOUT6 => self.lout6_pin.set_state(value.into()), // TODO: M* pins
         }
     }
 
     fn set_pwm_output(&mut self, output: PwmOutput, value: f32) {
         match output {
-            PwmOutput::LCUR1 => { set_lcur1(value, &mut self.tim4_pwm) }
-            PwmOutput::SPWM1 => { set_spwm1(value, &mut self.tim4_pwm) }
-            PwmOutput::SPWM2 => { set_spwm2(value, &mut self.tim4_pwm) }
-            PwmOutput::LPWM2 => { set_lpwm2(value, &mut self.tim3_pwm) }
-            PwmOutput::LPWM3 => { set_lpwm3(value, &mut self.tim3_pwm) }
+            PwmOutput::LCUR1 => set_lcur1(value, &mut self.tim4_pwm),
+            PwmOutput::SPWM1 => set_spwm1(value, &mut self.tim4_pwm),
+            PwmOutput::SPWM2 => set_spwm2(value, &mut self.tim4_pwm),
+            PwmOutput::LPWM2 => set_lpwm2(value, &mut self.tim3_pwm),
+            PwmOutput::LPWM3 => set_lpwm3(value, &mut self.tim3_pwm),
         }
     }
 }
@@ -553,9 +553,9 @@ mod rtic_app {
 
         let mut ign_input_pin = gpiod.pd15.into_input();
 
-        let mut m7_pin  = gpioc.pc13.into_input();
-        let mut m8_pin  = gpioa.pa8.into_input();
-        let mut m9_pin  = gpioe.pe7.into_input();
+        let mut m7_pin = gpioc.pc13.into_input();
+        let mut m8_pin = gpioa.pa8.into_input();
+        let mut m9_pin = gpioe.pe7.into_input();
         let mut m10_pin = gpioe.pe8.into_input();
         let mut m11_pin = gpioe.pe9.into_input();
         let mut m12_pin = gpiob.pb3.into_input();
@@ -630,10 +630,10 @@ mod rtic_app {
         let spwm2_ch: hal::timer::ChannelBuilder<hal::pac::TIM4, 2, false> =
             hal::timer::Channel3::new(gpiod.pd14);
 
-        let mut tim4_pwm = cx
-            .device
-            .TIM4
-            .pwm_hz((lcur1_ch, spwm1_ch, spwm2_ch), 1000.Hz(), &clocks);
+        let mut tim4_pwm =
+            cx.device
+                .TIM4
+                .pwm_hz((lcur1_ch, spwm1_ch, spwm2_ch), 1000.Hz(), &clocks);
 
         tim4_pwm.enable(hal::timer::Channel::C1);
         tim4_pwm.enable(hal::timer::Channel::C2);
@@ -1028,68 +1028,119 @@ mod rtic_app {
                     .adc1
                     .convert(cx.local.adc_pa3, SampleTime::Cycles_480) as f32
                     * 0.00882;
-            cx.shared.adc_result_vbat.lock(|v| *v = *v * 0.98 + adc_result_vbat * 0.02);
+            cx.shared
+                .adc_result_vbat
+                .lock(|v| *v = *v * 0.98 + adc_result_vbat * 0.02);
 
             // PcbT (with conversion and lowpass filtering)
             // Correct conversion from ADC to DegC (10k NTC thermistor with 10k
             // pull-up resistor)
-            let adc_value = cx.local.adc1.convert(cx.local.adc_pb1, SampleTime::Cycles_480) as f32;
+            let adc_value =
+                cx.local
+                    .adc1
+                    .convert(cx.local.adc_pb1, SampleTime::Cycles_480) as f32;
             let r_ntc = 10000.0 * adc_value / (4095.0 - adc_value);
             let ln_r = (r_ntc / 10000.0).ln();
             let t_inv = ln_r / 3950.0 + 1.0 / 298.15;
             let t_kelvin = 1.0 / t_inv;
             let t_celsius = t_kelvin - 273.15;
             let adc_result_tpcb = t_celsius;
-            cx.shared.adc_result_tpcb.lock(|v| *v = *v * 0.98 + adc_result_tpcb * 0.02);
+            cx.shared
+                .adc_result_tpcb
+                .lock(|v| *v = *v * 0.98 + adc_result_tpcb * 0.02);
 
             // Current measurements (with scaling, with a short filter)
 
             let f = 0.2;
 
-            let result = cx.local.adc1.convert(
-                    cx.local.adc_pa5, SampleTime::Cycles_480) as f32 * 0.00403;
-            cx.shared.adc_result_current1.lock(|v| *v = *v * (1.0-f) + result * f);
+            let result = cx
+                .local
+                .adc1
+                .convert(cx.local.adc_pa5, SampleTime::Cycles_480) as f32
+                * 0.00403;
+            cx.shared
+                .adc_result_current1
+                .lock(|v| *v = *v * (1.0 - f) + result * f);
 
-            let result = cx.local.adc1.convert(
-                    cx.local.adc_pa6, SampleTime::Cycles_480) as f32 * 0.00403;
-            cx.shared.adc_result_current2.lock(|v| *v = *v * (1.0-f) + result * f);
+            let result = cx
+                .local
+                .adc1
+                .convert(cx.local.adc_pa6, SampleTime::Cycles_480) as f32
+                * 0.00403;
+            cx.shared
+                .adc_result_current2
+                .lock(|v| *v = *v * (1.0 - f) + result * f);
 
-            let result = cx.local.adc1.convert(
-                    cx.local.adc_pa4, SampleTime::Cycles_480) as f32 * 0.00403;
-            cx.shared.adc_result_current3.lock(|v| *v = *v * (1.0-f) + result * f);
+            let result = cx
+                .local
+                .adc1
+                .convert(cx.local.adc_pa4, SampleTime::Cycles_480) as f32
+                * 0.00403;
+            cx.shared
+                .adc_result_current3
+                .lock(|v| *v = *v * (1.0 - f) + result * f);
 
-            let result = cx.local.adc1.convert(
-                    cx.local.adc_pa7, SampleTime::Cycles_480) as f32 * 0.00403;
-            cx.shared.adc_result_current4.lock(|v| *v = *v * (1.0-f) + result * f);
+            let result = cx
+                .local
+                .adc1
+                .convert(cx.local.adc_pa7, SampleTime::Cycles_480) as f32
+                * 0.00403;
+            cx.shared
+                .adc_result_current4
+                .lock(|v| *v = *v * (1.0 - f) + result * f);
 
-            let result = cx.local.adc1.convert(
-                    cx.local.adc_pc5, SampleTime::Cycles_480) as f32 * 0.00403 * 3.0;
-            cx.shared.adc_result_currentL.lock(|v| *v = *v * (1.0-f) + result * f);
+            let result = cx
+                .local
+                .adc1
+                .convert(cx.local.adc_pc5, SampleTime::Cycles_480) as f32
+                * 0.00403
+                * 3.0;
+            cx.shared
+                .adc_result_currentL
+                .lock(|v| *v = *v * (1.0 - f) + result * f);
 
             // General external inputs (with scaling, without filtering)
 
-            let result = cx.local.adc1.convert(
-                    cx.local.adc_pb0, SampleTime::Cycles_480) as f32 * 0.00749;
+            let result = cx
+                .local
+                .adc1
+                .convert(cx.local.adc_pb0, SampleTime::Cycles_480) as f32
+                * 0.00749;
             cx.shared.adc_result_m1.lock(|v| *v = result);
 
-            let result = cx.local.adc1.convert(
-                    cx.local.adc_pc0, SampleTime::Cycles_480) as f32 * 0.00749;
+            let result = cx
+                .local
+                .adc1
+                .convert(cx.local.adc_pc0, SampleTime::Cycles_480) as f32
+                * 0.00749;
             cx.shared.adc_result_m2.lock(|v| *v = result);
 
-            let result = cx.local.adc1.convert(
-                    cx.local.adc_pc1, SampleTime::Cycles_480) as f32 * 0.00749;
+            let result = cx
+                .local
+                .adc1
+                .convert(cx.local.adc_pc1, SampleTime::Cycles_480) as f32
+                * 0.00749;
             cx.shared.adc_result_m3.lock(|v| *v = result);
 
-            let result = cx.local.adc1.convert(
-                    cx.local.adc_pc2, SampleTime::Cycles_480) as f32 * 0.00749;
+            let result = cx
+                .local
+                .adc1
+                .convert(cx.local.adc_pc2, SampleTime::Cycles_480) as f32
+                * 0.00749;
             cx.shared.adc_result_m4.lock(|v| *v = result);
 
-            let result = cx.local.adc1.convert(
-                    cx.local.adc_pc3, SampleTime::Cycles_480) as f32 * 0.00749;
+            let result = cx
+                .local
+                .adc1
+                .convert(cx.local.adc_pc3, SampleTime::Cycles_480) as f32
+                * 0.00749;
             cx.shared.adc_result_m5.lock(|v| *v = result);
 
-            let result = cx.local.adc1.convert(
-                    cx.local.adc_pc4, SampleTime::Cycles_480) as f32 * 0.00749;
+            let result = cx
+                .local
+                .adc1
+                .convert(cx.local.adc_pc4, SampleTime::Cycles_480) as f32
+                * 0.00749;
             cx.shared.adc_result_m6.lock(|v| *v = result);
 
             Systick::delay(20.millis()).await;

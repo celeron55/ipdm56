@@ -1,5 +1,5 @@
-use common::*;
 use bxcan::{Id, StandardId};
+use common::*;
 
 define_parameters! {
     TicksMs {

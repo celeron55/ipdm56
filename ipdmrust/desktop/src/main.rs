@@ -3,8 +3,8 @@ mod cli;
 use cli::Cli;
 
 // Internal crates
-use common::*;
 use app::can_simulator::CanSimulator;
+use common::*;
 
 // Platform-specific dependencies
 use ::image as im;
@@ -52,8 +52,7 @@ impl HardwareImplementation {
     }
 }
 
-impl HardwareImplementation {
-}
+impl HardwareImplementation {}
 
 impl HardwareInterface for HardwareImplementation {
     fn millis(&mut self) -> u64 {
@@ -92,8 +91,7 @@ impl HardwareInterface for HardwareImplementation {
         self.digital_output_states.insert(output, value);
     }
 
-    fn set_pwm_output(&mut self, output: PwmOutput, value: f32) {
-    }
+    fn set_pwm_output(&mut self, output: PwmOutput, value: f32) {}
 }
 
 fn main() {

@@ -20,7 +20,7 @@ impl CanSimulator {
     pub fn update(&mut self, millis: u64) {
         // You can generate these using util/generate_can_simulator_txframe.py
 
-		// Inverter
+        // Inverter
         if self.i % 23 == 0 {
             self.txbuf.push(bxcan::Frame::new_data(
                 bxcan::StandardId::new(0x1DA).unwrap(),
@@ -33,7 +33,7 @@ impl CanSimulator {
                 bxcan::Data::new(b"\x1a\x36\x37\x00\x5f\x00\x5b\x28").unwrap(),
             ));
         }
-		// Inverter control
+        // Inverter control
         if self.i % 23 == 2 {
             self.txbuf.push(bxcan::Frame::new_data(
                 bxcan::StandardId::new(0x300).unwrap(),
@@ -64,7 +64,7 @@ impl CanSimulator {
                 bxcan::Data::new(b"\x4e\x40\x00\xaa\xc0\x00\x00\x6b").unwrap(),
             ));
         }
-		// BMS
+        // BMS
         if self.i % 23 == 7 {
             self.txbuf.push(bxcan::Frame::new_data(
                 bxcan::StandardId::new(0x100).unwrap(),
@@ -89,21 +89,21 @@ impl CanSimulator {
                 bxcan::Data::new(b"\x10\x04\x00\x00\x00\x00\x00\x00").unwrap(),
             ));
         }
-		// CCS controller
+        // CCS controller
         if self.i % 23 == 16 {
             self.txbuf.push(bxcan::Frame::new_data(
                 bxcan::StandardId::new(0x506).unwrap(),
                 bxcan::Data::new(b"\x01\x00\x00\x00\x00\x19\x00\x00").unwrap(),
             ));
         }
-		// Outlander PHEV heater
+        // Outlander PHEV heater
         if self.i % 23 == 17 {
             self.txbuf.push(bxcan::Frame::new_data(
                 bxcan::StandardId::new(0x398).unwrap(),
                 bxcan::Data::new(b"\x01\x1a\x11\x5a\x5b\x28\x00\x00").unwrap(),
             ));
         }
-		// Outlander PHEV heater request
+        // Outlander PHEV heater request
         if self.i % 23 == 18 {
             self.txbuf.push(bxcan::Frame::new_data(
                 bxcan::StandardId::new(0x188).unwrap(),
