@@ -373,4 +373,16 @@ define_parameters! {
             scale: 1.0,
         },
     },
+    EvaporatorT {
+        display_name: "A/C evaporator T",
+        decimals: 0,
+        unit: "degC",
+        log_threshold: 5.0,
+    },
+    AcCompressorPercent {
+        display_name: "A/C compressor power %",
+        decimals: 0,
+        unit: "%",
+        log_threshold: 5.0,
+    },
 }

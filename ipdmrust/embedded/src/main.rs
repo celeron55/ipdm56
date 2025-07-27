@@ -38,7 +38,7 @@ use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 
 // Constants
 
-const LOG_BUFFER_SIZE: usize = 1024;
+const LOG_BUFFER_SIZE: usize = 4096;
 const CONSOLE_RX_BUF_SIZE: usize = 100;
 const MAINBOARD_RX_BUF_SIZE: usize = 200;
 const MAINBOARD_TX_BUF_SIZE: usize = 200;
@@ -175,6 +175,20 @@ unsafe impl bxcan::FilterOwner for CAN1 {
     const NUM_FILTER_BANKS: u8 = 28;
 }
 
+// TIM2 PWM
+
+type Tim2Pwm = hal::timer::PwmHz<
+    hal::pac::TIM2,
+    hal::timer::ChannelBuilder<hal::pac::TIM2, 1, false>, // M12 (PB3 AF1)
+>;
+
+fn set_m12_pwm(pwm: f32, pwm_timer: &mut Tim2Pwm) {
+    pwm_timer.set_duty(
+        hal::timer::Channel::C2,
+        (pwm_timer.get_max_duty() as f32 * pwm) as u16,
+    );
+}
+
 // TIM3 PWM
 
 type Tim3Pwm = hal::timer::PwmHz<
@@ -289,6 +303,7 @@ struct HardwareImplementation {
     adc_result_m4: f32,
     adc_result_m5: f32,
     adc_result_m6: f32,
+    tim2_pwm: Tim2Pwm,
     tim3_pwm: Tim3Pwm,
     tim4_pwm: Tim4Pwm,
     group1oc_pin: Group1OCPin,
@@ -301,7 +316,7 @@ struct HardwareImplementation {
     m9_pin: M9Pin,
     m10_pin: M10Pin,
     m11_pin: M11Pin,
-    m12_pin: M12Pin,
+    //m12_pin: M12Pin,
     m13_pin: M13Pin,
     hout1_pin: HOUT1Pin,
     hout2_pin: HOUT2Pin,
@@ -374,7 +389,7 @@ impl HardwareInterface for HardwareImplementation {
             DigitalInput::M9 => self.m9_pin.is_high(),
             DigitalInput::M10 => self.m10_pin.is_high(),
             DigitalInput::M11 => self.m11_pin.is_high(),
-            DigitalInput::M12 => self.m12_pin.is_high(),
+            DigitalInput::M12 => false, //self.m12_pin.is_high(), // HACK: M12 PWM out
             DigitalInput::M13 => self.m13_pin.is_high(),
         }
     }
@@ -439,6 +454,7 @@ impl HardwareInterface for HardwareImplementation {
             PwmOutput::SPWM2 => set_spwm2(value, &mut self.tim4_pwm),
             PwmOutput::LPWM2 => set_lpwm2(value, &mut self.tim3_pwm),
             PwmOutput::LPWM3 => set_lpwm3(value, &mut self.tim3_pwm),
+            PwmOutput::M12 => set_m12_pwm(value, &mut self.tim2_pwm),
         }
     }
 }
@@ -558,7 +574,7 @@ mod rtic_app {
         let mut m9_pin = gpioe.pe7.into_input();
         let mut m10_pin = gpioe.pe8.into_input();
         let mut m11_pin = gpioe.pe9.into_input();
-        let mut m12_pin = gpiob.pb3.into_input();
+        //let mut m12_pin = gpiob.pb3.into_input(); // HACK: M12 PWM out
         let mut m13_pin = gpiob.pb4.into_input();
 
         // Output pins
@@ -603,6 +619,16 @@ mod rtic_app {
         init_logger();
 
         info!("-!- ipdmrust boot");
+
+        // TIM2 (PWM generation)
+
+        let m12_pwm_ch: hal::timer::ChannelBuilder<hal::pac::TIM2, 1, false> =
+            hal::timer::Channel2::new(gpiob.pb3.into_alternate::<1>());
+
+        let mut tim2_pwm = cx.device.TIM2.pwm_hz(m12_pwm_ch, 50.Hz(), &clocks);
+
+        tim2_pwm.enable(hal::timer::Channel::C2);
+        set_m12_pwm(0.0, &mut tim2_pwm);
 
         // TIM3 (PWM generation)
 
@@ -784,6 +810,7 @@ mod rtic_app {
             adc_result_m4: f32::NAN,
             adc_result_m5: f32::NAN,
             adc_result_m6: f32::NAN,
+            tim2_pwm,
             tim3_pwm,
             tim4_pwm,
             group1oc_pin,
@@ -796,7 +823,7 @@ mod rtic_app {
             m9_pin,
             m10_pin,
             m11_pin,
-            m12_pin,
+            //m12_pin, // HACK: M12 PWM out
             m13_pin,
             hout1_pin,
             hout2_pin,

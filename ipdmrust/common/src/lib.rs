@@ -78,7 +78,8 @@ pub enum PwmOutput {
     SPWM2,
     LPWM2,
     LPWM3,
-    // TODO: LPWM1 (not supported in ipdmhw2.0 due to a hardware bug
+    M12, // HACK: M12 PWM out
+         // TODO: LPWM1 (not supported in ipdmhw2.0 due to a hardware bug
 }
 
 pub trait HardwareInterface {

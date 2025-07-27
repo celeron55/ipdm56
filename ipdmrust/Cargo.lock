@@ -152,6 +152,7 @@ dependencies = [
  "fixedstr",
  "int-enum",
  "log",
+ "micromath",
  "profont",
  "ringbuffer",
  "safe-regex",

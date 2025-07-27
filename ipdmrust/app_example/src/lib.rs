@@ -17,6 +17,7 @@ use fixedstr::str_format;
 use int_enum::IntEnum;
 #[allow(unused_imports)]
 use log::{debug, error, info, trace, warn};
+use micromath::F32Ext;
 use ringbuffer::RingBuffer;
 
 fn string_contains_case_insensitive(haystack: &str, needle: &str) -> bool {
@@ -59,6 +60,38 @@ fn get_single_arg(command: &str) -> &str {
     &command[arg_i0..]
 }
 
+fn convert_5v_supplied_10k_ntc_on_mx_pin_to_celsius(voltage: f32) -> f32 {
+    const VIN: f32 = 5.0;
+    const R_SERIES: f32 = 39000.0;
+    const R_MEASURE: f32 = 4700.0;
+    const A: f32 = 0.0011384;
+    const B: f32 = 0.00023245;
+    const C: f32 = 9.489e-8;
+    const KELVIN_OFFSET: f32 = 273.15;
+
+    if voltage <= 0.0 || voltage >= VIN {
+        return f32::NAN;
+    }
+
+    let r_parallel = R_SERIES + R_MEASURE;
+    let r_ntc = (VIN - voltage) * r_parallel / voltage;
+
+    if r_ntc <= 0.0 {
+        return f32::NAN;
+    }
+
+    let ln_r = r_ntc.ln();
+    let ln_r3 = ln_r * ln_r * ln_r;
+    let inv_t = A + B * ln_r + C * ln_r3;
+
+    if inv_t <= 0.0 {
+        return f32::NAN;
+    }
+
+    let t_k = 1.0 / inv_t;
+    t_k - KELVIN_OFFSET
+}
+
 const ObcDcdc12VSupply: DigitalOutput = DigitalOutput::HOUT1;
 const DcdcEnable: DigitalOutput = DigitalOutput::HOUT6;
 const BatteryPump: DigitalOutput = DigitalOutput::HOUT4;
@@ -70,6 +103,7 @@ const CoolingFan: DigitalOutput = DigitalOutput::LOUT4;
 const HeatLoopPump: DigitalOutput = DigitalOutput::LOUT5;
 
 const CpPwmToObc: PwmOutput = PwmOutput::SPWM1;
+const AcCompressorServoPwm: PwmOutput = PwmOutput::M12;
 
 pub struct MainState {
     update_counter: u32,
@@ -84,6 +118,7 @@ pub struct MainState {
     last_heater_update_ms: u64,
     ignition_last_on_ms: u64,
     last_aux_low_ms: u64,
+    last_compressor_off_ts: u64,
     last_logged_values: [f32; NUM_PARAMETERS],
     watch_filter: ArrayString<20>,
 }
@@ -105,6 +140,7 @@ impl MainState {
             last_heater_update_ms: 0,
             ignition_last_on_ms: 0,
             last_aux_low_ms: 0,
+            last_compressor_off_ts: 0,
             last_logged_values: [f32::NAN; NUM_PARAMETERS],
             watch_filter: ArrayString::new(),
         }
@@ -129,6 +165,8 @@ impl MainState {
         self.update_outputs(hw);
 
         self.update_charging(hw);
+
+        self.update_aircon(hw);
 
         if hw.millis() - self.last_heater_update_ms >= 2000 {
             self.last_heater_update_ms = hw.millis();
@@ -187,6 +225,11 @@ impl MainState {
             get_parameter(ParameterId::LastSeenSoc)
                 .set_value(get_parameter(ParameterId::Soc).value, hw.millis());
         }
+
+        get_parameter(ParameterId::EvaporatorT).set_value(
+            convert_5v_supplied_10k_ntc_on_mx_pin_to_celsius(hw.get_analog_input(AnalogInput::M1)),
+            hw.millis(),
+        );
 
         self.timeout_parameters(hw);
     }
@@ -318,6 +361,60 @@ impl MainState {
         );
     }
 
+    fn update_aircon(&mut self, hw: &mut dyn HardwareInterface) {
+        let cooling_requested = hw.get_digital_input(DigitalInput::Ignition)
+            || get_parameter(ParameterId::HvacRequested).value > 0.5
+                && get_parameter(ParameterId::CabinT).value > 30.0;
+
+        let compressor_allowed = get_parameter(ParameterId::MainContactor).value > 0.5
+            && get_parameter(ParameterId::BmsMaxDischargeCurrent).value > 50.0
+            && get_parameter(ParameterId::EvaporatorT).value > 5.0;
+
+        // The evaporator really only goes down to about 15°C if the HVAC blower
+        // is on a low setting so let's play it safe with EvaporatorT
+        let activate_compressor = cooling_requested
+            && compressor_allowed
+            && get_parameter(ParameterId::EvaporatorT).value >= 10.0
+            && get_parameter(ParameterId::CabinT).value > 20.0;
+
+        if !activate_compressor {
+            self.last_compressor_off_ts = hw.millis();
+        }
+
+        // Measurements at 14V with the 80A Skywalker ESC (25°C ambient)
+        // - Low side pressure probably dropped during this test, reducing load
+        //   on the compressor as throttle was increased
+        // Throttle, DC in, ESC T
+        //     40 %,  15 A, 63 °C
+        //     67 %,  40 A, 54 °C
+        //     75 %,  43 A, 48 °C
+        //     90 %,  49 A, 46 °C
+        // (Maxxed out HVAC blower speed to increase low side pressure)
+        //     90 %,  50 A, 50 °C
+        //    100 %,  50 A, 51 °C
+        // ESC temperature was measured to be 59°C a bit after powering off the
+        // compressor and fans after this test, so that's probably roughly the
+        // internal temperature during use which the airflow obscures
+
+        const PERCENT_PER_S: f32 = 2.0;
+        let soft_start_max_percent = (hw.millis() - self.last_compressor_off_ts)
+                as f32 / 1000.0 * PERCENT_PER_S;
+
+        get_parameter(ParameterId::AcCompressorPercent)
+            .set_value((if activate_compressor { 100.0 } else { 0.0 } as f32).clamp(0.0, soft_start_max_percent), hw.millis());
+
+        // Update servo pulse output to compressor motor controller
+        fn map_to_pwm_duty(input: f32) -> f32 {
+            // Clamp input to [0.0, 100.0] to avoid extrapolation
+            let clamped = input.clamp(0.0, 100.0);
+            0.05 + clamped * 0.0005 // Or: (100.0 + clamped) / 2000.0
+        }
+        hw.set_pwm_output(
+            AcCompressorServoPwm,
+            map_to_pwm_duty(get_parameter(ParameterId::AcCompressorPercent).value),
+        );
+    }
+
     fn update_outputs(&mut self, hw: &mut dyn HardwareInterface) {
         let ignition_input = hw.get_digital_input(DigitalInput::Ignition);
 
@@ -358,7 +455,9 @@ impl MainState {
             // TODO: Trigger on inverter, motor and OBC temperature also
             hw.set_digital_output(
                 CoolingFan,
-                allow_solenoids && get_parameter(ParameterId::BatteryTMax).value > 35.0,
+                allow_solenoids
+                    && (get_parameter(ParameterId::BatteryTMax).value > 35.0
+                        || get_parameter(ParameterId::AcCompressorPercent).value >= 1.0),
             );
 
             // Update heating loop pump
@@ -656,7 +755,7 @@ impl MainState {
                     (dc_link_voltage_Vx10 & 0xff) as u8,
                     (obc_Ax10 >> 8) as u8,
                     (obc_Ax10 & 0xff) as u8,
-                    get_parameter(ParameterId::PcbT).value as u8,
+                    (get_parameter(ParameterId::PcbT).value as i8) as u8,
                     ac_obc_state, /* Foccci.AcObcState (new) */
                     0x00 | if group1oc { (1 << 0) } else { 0 }
                         | if group2oc { (1 << 1) } else { 0 }
@@ -670,6 +769,25 @@ impl MainState {
                 // in 0x200, so we send this also which it does follow
                 self.send_setting_frame(hw, 0x320, 1, 0, 1);
             }
+        }
+
+        {
+            // More stuff in a newer message
+
+            self.send_normal_frame(
+                hw,
+                0x208,
+                &[
+                    0, // Reserved for flag bits
+                    (get_parameter(ParameterId::EvaporatorT).value as i8) as u8,
+                    get_parameter(ParameterId::AcCompressorPercent).value as u8,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ],
+            );
         }
     }
 
