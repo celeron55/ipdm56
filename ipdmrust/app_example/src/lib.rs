@@ -375,7 +375,7 @@ impl MainState {
         let activate_compressor = cooling_requested
             && compressor_allowed
             && get_parameter(ParameterId::EvaporatorT).value >= 10.0
-            && get_parameter(ParameterId::CabinT).value > 20.0;
+            && get_parameter(ParameterId::CabinT).value >= 23.0;
 
         if !activate_compressor {
             self.last_compressor_off_ts = hw.millis();
