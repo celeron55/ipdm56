@@ -277,10 +277,10 @@ impl MainState {
         }
 
         // This is to charge the 12V battery
-        let daily_wakeup = (hw.millis() > (1000 * 3600 * 1)
+        let daily_wakeup = (hw.millis() > (1000 * 3600 * 2)
             && (
-                // Always every 24h for 30min
-                hw.millis() % (1000 * 3600 * 24) < (1000 * 60 * 30)
+                // Always every 24h for 60min
+                hw.millis() % (1000 * 3600 * 24) < (1000 * 60 * 60)
                     || (
                         // Every 4h for 30min if 12V battery is low
                         hw.millis() % (1000 * 3600 * 4) < (1000 * 60 * 30)
