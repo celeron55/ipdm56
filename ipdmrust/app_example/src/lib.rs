@@ -92,6 +92,18 @@ fn convert_5v_supplied_10k_ntc_on_mx_pin_to_celsius(voltage: f32) -> f32 {
     t_k - KELVIN_OFFSET
 }
 
+/// Linearly maps a value `x` from the input range [in_min, in_max] to the
+/// output range [out_min, out_max].
+/// This is similar to Arduino's map() function but for f32 values.
+/// Note: This does not clamp the input; it allows extrapolation if x is outside
+/// [in_min, in_max].
+fn map_f32(x: f32, in_min: f32, in_max: f32, out_min: f32, out_max: f32) -> f32 {
+    if in_min == in_max {
+        return out_min; // Avoid division by zero; return out_min as a safe default
+    }
+    (x - in_min) / (in_max - in_min) * (out_max - out_min) + out_min
+}
+
 const ObcDcdc12VSupply: DigitalOutput = DigitalOutput::HOUT1;
 const DcdcEnable: DigitalOutput = DigitalOutput::HOUT6;
 const BatteryPump: DigitalOutput = DigitalOutput::HOUT4;
@@ -366,16 +378,51 @@ impl MainState {
             || get_parameter(ParameterId::HvacRequested).value > 0.5
                 && get_parameter(ParameterId::CabinT).value > 30.0;
 
+        // The measurement setup is such that the evaporator temperature
+        // measurement going below 12°C means there's very little airflow going
+        // through it
         let compressor_allowed = get_parameter(ParameterId::MainContactor).value > 0.5
             && get_parameter(ParameterId::BmsMaxDischargeCurrent).value > 50.0
-            && get_parameter(ParameterId::EvaporatorT).value > 5.0;
+            && get_parameter(ParameterId::EvaporatorT).value > 12.0;
+
+        // We don't want to run the compressor for extended periods at other
+        // than 0% and 100% throttle, because it was experimentally found that
+        // partial throttles heat up the ESC more than full throttle and the ESC
+        // heating up is the limiting factor. Thus, we'll run it at 0% and 100%
+        // and use a hysteresis for evaporator temperature.
+
+        // Target evaporator temperature is set based on cabin temperature,
+        // because we don't really have anything else to base it on (currently
+        // the temperature slider on the dash is purely mechanical)
+        let evaporator_t_setpoint_without_hysteresis =
+            if get_parameter(ParameterId::CabinT).value.is_nan() {
+                17.0
+            } else {
+                map_f32(
+                    get_parameter(ParameterId::CabinT).value,
+                    20.0,
+                    28.0,
+                    20.0,
+                    14.0,
+                )
+                .clamp(14.0, 25.0)
+            };
+
+        // We want about 3°C evaporator temperature hysteresis, and we'll place
+        // that above the target temperature, i.e. we use a -0+3°C hysteresis
+        let evaporator_t_setpoint_with_hysteresis = evaporator_t_setpoint_without_hysteresis
+            + if get_parameter(ParameterId::AcCompressorPercent).value > 0.5 {
+                0.0
+            } else {
+                3.0 // Allow evaporator temperature to rise 3°C when compressor is off
+            };
 
         // The evaporator really only goes down to about 15°C if the HVAC blower
         // is on a low setting so let's play it safe with EvaporatorT
         let activate_compressor = cooling_requested
             && compressor_allowed
-            && get_parameter(ParameterId::EvaporatorT).value >= 10.0
-            && get_parameter(ParameterId::CabinT).value >= 23.0;
+            && get_parameter(ParameterId::EvaporatorT).value
+                >= evaporator_t_setpoint_with_hysteresis;
 
         if !activate_compressor {
             self.last_compressor_off_ts = hw.millis();
@@ -397,17 +444,18 @@ impl MainState {
         // internal temperature during use which the airflow obscures
 
         const PERCENT_PER_S: f32 = 2.0;
-        let soft_start_max_percent = (hw.millis() - self.last_compressor_off_ts)
-                as f32 / 1000.0 * PERCENT_PER_S;
+        let soft_start_max_percent =
+            (hw.millis() - self.last_compressor_off_ts) as f32 / 1000.0 * PERCENT_PER_S;
 
-        get_parameter(ParameterId::AcCompressorPercent)
-            .set_value((if activate_compressor { 100.0 } else { 0.0 } as f32).clamp(0.0, soft_start_max_percent), hw.millis());
+        get_parameter(ParameterId::AcCompressorPercent).set_value(
+            (if activate_compressor { 100.0 } else { 0.0 } as f32)
+                .clamp(0.0, soft_start_max_percent),
+            hw.millis(),
+        );
 
         // Update servo pulse output to compressor motor controller
         fn map_to_pwm_duty(input: f32) -> f32 {
-            // Clamp input to [0.0, 100.0] to avoid extrapolation
-            let clamped = input.clamp(0.0, 100.0);
-            0.05 + clamped * 0.0005 // Or: (100.0 + clamped) / 2000.0
+            map_f32(input.clamp(0.0, 100.0), 0.0, 100.0, 0.05, 0.10)
         }
         hw.set_pwm_output(
             AcCompressorServoPwm,
