@@ -343,15 +343,27 @@ impl MainState {
 
         let target_temperature = {
             if get_parameter(ParameterId::CabinT).value.is_nan() {
-                60.0
-            } else if get_parameter(ParameterId::CabinT).value < 10.0 {
-                60.0
-            } else if get_parameter(ParameterId::CabinT).value < 28.0
-                && hw.get_digital_input(DigitalInput::Ignition)
-            {
-                60.0
+                60.0 // Fallback: We don't know what the cabin temperature is
+            } else if !hw.get_digital_input(DigitalInput::Ignition) {
+                // Remotely activated heating
+                map_f32(
+                    get_parameter(ParameterId::CabinT).value,
+                    5.0,
+                    30.0,
+                    55.0,
+                    35.0,
+                )
+                .clamp(35.0, 55.0)
             } else {
-                60.0 - (get_parameter(ParameterId::CabinT).value - 10.0) * 1.8
+                // Locally activated heating (via ignition key)
+                map_f32(
+                    get_parameter(ParameterId::CabinT).value,
+                    15.0,
+                    35.0,
+                    60.0,
+                    35.0,
+                )
+                .clamp(35.0, 60.0)
             }
         };
 
