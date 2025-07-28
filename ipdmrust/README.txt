@@ -49,9 +49,6 @@ $ ./flash_dfu_release.sh
 - OR
 $ dfu-util -a 0 --dfuse-address 0x08000000  -D ../target/thumbv7em-none-eabihf/release/embedded.bin
 
-UART firmware update (e.g. via UI8D)
-$ ./flash_uart_release.sh /dev/ttyUSB0
-
 The raw command for UART firmware update is:
 $ stm32flash -R -w ../target/thumbv7em-none-eabihf/release/embedded.bin -b 115200 /dev/ttyUSB0
 
@@ -61,6 +58,21 @@ $ ./flash_openocd_release.sh
 
 - This also kind of works, but RTT logging is not set up so it will complain after flashing succeeds:
 $ cargo run --release
+
+Flashing physical hardware via UI8D UART bridge
+-----------------------------------------------
+
+Ideally you just run this:
+$ cd embedded
+$ ./build_release.sh
+$ ./flash_uart_release.sh /dev/ttyUSB0
+
+But actually for some reason that doesn't work very well and you need to do it manually:
+$ cd embedded
+$ ./build_release.sh
+$ picocom --baud 115200 -r -l -c -e x /dev/ttyUSB0
+# Enter the "dfu" command in picocom and exit (CTRL+X CTRL+Q)
+$ stm32flash -R -w ../target/thumbv7em-none-eabihf/release/embedded.bin -b 115200 /dev/ttyUSB0
 
 Monitoring using USB serial
 ---------------------------
