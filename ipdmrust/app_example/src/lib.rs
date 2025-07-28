@@ -515,12 +515,11 @@ impl MainState {
 
             // Update cooling fan
             // TODO: Trigger on inverter, motor and OBC temperature also
-            hw.set_digital_output(
-                CoolingFan,
-                allow_solenoids
-                    && (get_parameter(ParameterId::BatteryTMax).value > 35.0
-                        || get_parameter(ParameterId::AcCompressorPercent).value >= 1.0),
-            );
+            let activate_cooling_fan = allow_solenoids
+                && hw.millis() - self.last_aux_low_ms > 1000 * 10
+                && (get_parameter(ParameterId::BatteryTMax).value > 35.0
+                    || get_parameter(ParameterId::AcCompressorPercent).value >= 1.0);
+            hw.set_digital_output(CoolingFan, activate_cooling_fan);
 
             // Update heating loop pump
             hw.set_digital_output(
