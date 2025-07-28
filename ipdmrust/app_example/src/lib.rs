@@ -395,6 +395,8 @@ impl MainState {
         // through it
         let compressor_allowed = get_parameter(ParameterId::MainContactor).value > 0.5
             && get_parameter(ParameterId::BmsMaxDischargeCurrent).value > 50.0
+            && hw.millis() - self.last_aux_low_ms > 1000 * 30
+            && get_parameter(ParameterId::AuxVoltage).value > 13.2
             && get_parameter(ParameterId::EvaporatorT).value > 12.0;
 
         // We don't want to run the compressor for extended periods at other
