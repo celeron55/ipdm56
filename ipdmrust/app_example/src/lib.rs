@@ -272,7 +272,7 @@ impl MainState {
             get_parameter(ParameterId::LastSeenSoc).value.is_nan()
                 || get_parameter(ParameterId::LastSeenSoc).value >= 10.0;
 
-        if get_parameter(ParameterId::AuxVoltage).value < 11.8 {
+        if get_parameter(ParameterId::AuxVoltage).value < 12.0 {
             self.last_aux_low_ms = hw.millis();
         }
 
