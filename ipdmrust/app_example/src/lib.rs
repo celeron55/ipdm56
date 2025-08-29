@@ -131,6 +131,7 @@ pub struct MainState {
     ignition_last_on_ms: u64,
     last_aux_low_ms: u64,
     last_compressor_off_ts: u64,
+    last_dcdc_overcurrent_ts: u64,
     last_logged_values: [f32; NUM_PARAMETERS],
     watch_filter: ArrayString<20>,
 }
@@ -152,6 +153,7 @@ impl MainState {
             last_heater_update_ms: 0,
             ignition_last_on_ms: 0,
             last_aux_low_ms: 0,
+            last_dcdc_overcurrent_ts: 0,
             last_compressor_off_ts: 0,
             last_logged_values: [f32::NAN; NUM_PARAMETERS],
             watch_filter: ArrayString::new(),
@@ -431,12 +433,18 @@ impl MainState {
                 3.0 // Allow evaporator temperature to rise 3°C when compressor is off
             };
 
+        let dcdc_current = get_parameter(ParameterId::DcdcCurrent).value;
+        if dcdc_current > 110.0 {
+            self.last_dcdc_overcurrent_ts = hw.millis();
+        }
+
         // The evaporator really only goes down to about 15°C if the HVAC blower
         // is on a low setting so let's play it safe with EvaporatorT
         let activate_compressor = cooling_requested
             && compressor_allowed
             && get_parameter(ParameterId::EvaporatorT).value
-                >= evaporator_t_setpoint_with_hysteresis;
+                >= evaporator_t_setpoint_with_hysteresis
+                && (hw.millis() - self.last_dcdc_overcurrent_ts > 60000);
 
         if !activate_compressor {
             self.last_compressor_off_ts = hw.millis();

@@ -385,4 +385,16 @@ define_parameters! {
         unit: "%",
         log_threshold: 5.0,
     },
+    DcdcCurrent {
+        display_name: "DCDC current",
+        decimals: 1,
+        unit: "A",
+        can_map: CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x377).unwrap()),
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
+                Some((((data[2] as u16) << 8) | data[3] as u16) as f32)
+            }),
+            scale: 0.1,
+        },
+    },
 }
