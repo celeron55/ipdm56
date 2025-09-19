@@ -276,6 +276,22 @@ define_parameters! {
             scale: 1.0,
         },
     },
+    ChargeCompleteVoltageSettingRequested {
+        display_name: "CCVS requested",
+        unit: "mV",
+        can_map: CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x570).unwrap()),
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
+                if data[0] == 1 {
+                    // Voltage setting is in data[3..4], big endian
+                    Some(((((data[3] as u16) << 8) | (data[4] as u16)) * 20) as f32)
+                } else {
+                    None
+                }
+            }),
+            scale: 1.0,
+        },
+    },
     FoccciCPPWM {
         display_name: "Foccci CP PWM",
         unit: "%",

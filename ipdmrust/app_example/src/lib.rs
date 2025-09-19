@@ -620,8 +620,12 @@ impl MainState {
             // Send charge completion voltage setting to BMS
             let old_value: u16 =
                 get_parameter(ParameterId::BmsChargeCompleteVoltageSetting).value as u16;
-            // TODO: Allow configuring this at runtime
-            let new_value: u16 = 4120;
+            let setting_value = get_parameter(ParameterId::ChargeCompleteVoltageSettingRequested).value;
+            let new_value: u16 = if setting_value.is_nan() {
+                4120
+            } else {
+                setting_value as u16
+            };
             if old_value != new_value {
                 self.send_setting_frame(hw, 0x120, 0, old_value, new_value);
             }
