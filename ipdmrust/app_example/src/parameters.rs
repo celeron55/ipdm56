@@ -188,6 +188,15 @@ define_parameters! {
             scale: 1.0,
         },
     },
+    ObcEvsePwm {
+        display_name: "OBC CP PWM",
+        unit: "%",
+        can_map: CanMap {
+           id: Id::Standard(StandardId::new(0x38a).unwrap()),
+            bits: CanBitSelection::Uint8(3),
+            scale: 1.0,
+        },
+    },
     PdmState {
         display_name: "PdmState",
         unit: "",

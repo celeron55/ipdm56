@@ -578,8 +578,17 @@ impl MainState {
         // * Toggle this off for 5 seconds when ignition key is turned off. That
         //   ensures charging will start afterwards if the OBC is in a weird
         //   state, into which it often likes to go
+        //   * NOTE: Toggling this off doesn't work when ignition is on, because
+        //   that's hardwired to keep this on in hardware
         // * Also toggle this for 5 seconds every 30 minutes if the DC/DC is not
         //   running while the main contactor is closed
+        //   * NOTE: Toggling this off doesn't work when ignition is on, because
+        //   that's hardwired to keep this on in hardware
+        // * Also toggle this for 5 seconds every 10 minutes if the OBC is not
+        //   reporting charge current while everything indicates charging should
+        //   be possible
+        //   * NOTE: Toggling this off doesn't work when ignition is on, because
+        //   that's hardwired to keep this on in hardware
         hw.set_digital_output(ObcDcdc12VSupply, {
             if self.last_millis > 60000
                 && self.last_millis - self.ignition_last_on_ms >= 1000
@@ -595,6 +604,20 @@ impl MainState {
                     get_parameter(ParameterId::DcdcStatus).value != 0x22 as f32 &&
                     get_parameter(ParameterId::Precharging).value < 0.5 &&
                     get_parameter(ParameterId::MainContactor).value > 0.5
+            {
+                false
+            } else if self.last_millis > 120000 &&
+                    // De-synced by 30s from wakeups happening on millis() % N,
+                    // so that this doesn't mess up the precharge
+                    (self.last_millis - 30000) % (1000 * 60 * 10) < (1000 * 5) &&
+                    get_parameter(ParameterId::ChargeComplete).value < 0.5 &&
+                    get_parameter(ParameterId::ObcDcc).value < 1.0 &&
+                    get_parameter(ParameterId::BmsMaxChargeCurrent).value > 2.0 &&
+                    get_parameter(ParameterId::Precharging).value < 0.5 &&
+                    get_parameter(ParameterId::MainContactor).value > 0.5 &&
+                    get_parameter(ParameterId::ObcDcv).value > 150.0 &&
+                    get_parameter(ParameterId::AcVoltage).value > 200.0 &&
+                    get_parameter(ParameterId::ObcEvsePwm).value > 8.0
             {
                 false
             } else {
