@@ -343,8 +343,8 @@ impl MainState {
         let heating_needed = (hw.get_digital_input(DigitalInput::Ignition)
             || get_parameter(ParameterId::HvacRequested).value > 0.5)
             && (get_parameter(ParameterId::CabinT).value.is_nan()
-                || get_parameter(ParameterId::CabinT).value < 28.0) ||
-            self.heating_battery;
+                || get_parameter(ParameterId::CabinT).value < 28.0)
+            || self.heating_battery;
 
         let target_temperature = {
             if get_parameter(ParameterId::CabinT).value.is_nan() {
@@ -447,7 +447,7 @@ impl MainState {
             && compressor_allowed
             && get_parameter(ParameterId::EvaporatorT).value
                 >= evaporator_t_setpoint_with_hysteresis
-                && (hw.millis() - self.last_dcdc_overcurrent_ts > 60000);
+            && (hw.millis() - self.last_dcdc_overcurrent_ts > 60000);
 
         if !activate_compressor {
             self.last_compressor_off_ts = hw.millis();
@@ -498,16 +498,18 @@ impl MainState {
             self.last_solenoid_update_ms = hw.millis();
 
             let heat_battery_to_t = {
-                if get_parameter(ParameterId::FoccciCPPWM).value > 2.0 &&
-                        get_parameter(ParameterId::FoccciCPPWM).value < 8.0 {
+                if get_parameter(ParameterId::FoccciCPPWM).value > 2.0
+                    && get_parameter(ParameterId::FoccciCPPWM).value < 8.0
+                {
                     // DC fast charging
                     25.0
                 } else if get_parameter(ParameterId::OutlanderHeaterT).value > 65.0 {
                     // Heater temperature indicates lots of excess heat being
                     // available (diesel heater)
                     22.0
-                } else if get_parameter(ParameterId::HvacRequested).value > 0.5 ||
-                        get_parameter(ParameterId::OutlanderHeaterT).value > 55.0 {
+                } else if get_parameter(ParameterId::HvacRequested).value > 0.5
+                    || get_parameter(ParameterId::OutlanderHeaterT).value > 55.0
+                {
                     // HVAC remote request or heater temperature indicates
                     // excess heat being available (diesel heater)
                     10.0
@@ -662,7 +664,8 @@ impl MainState {
             // Send charge completion voltage setting to BMS
             let old_value: u16 =
                 get_parameter(ParameterId::BmsChargeCompleteVoltageSetting).value as u16;
-            let setting_value = get_parameter(ParameterId::ChargeCompleteVoltageSettingRequested).value;
+            let setting_value =
+                get_parameter(ParameterId::ChargeCompleteVoltageSettingRequested).value;
             let new_value: u16 = if setting_value.is_nan() {
                 4120
             } else {
