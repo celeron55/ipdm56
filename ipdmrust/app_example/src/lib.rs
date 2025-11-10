@@ -495,8 +495,19 @@ impl MainState {
             self.last_solenoid_update_ms = hw.millis();
 
             let heat_battery_to_t = {
-                if get_parameter(ParameterId::HvacRequested).value > 0.5 {
+                if get_parameter(ParameterId::FoccciCPPWM).value > 2.0 &&
+                        get_parameter(ParameterId::FoccciCPPWM).value < 8.0 {
+                    // DC fast charging
+                    25.0
+                } else if get_parameter(ParameterId::OutlanderHeaterT).value > 65.0 {
+                    // Heater temperature indicates lots of excess heat being
+                    // available (diesel heater)
                     22.0
+                } else if get_parameter(ParameterId::HvacRequested).value > 0.5 ||
+                        get_parameter(ParameterId::OutlanderHeaterT).value > 55.0 {
+                    // HVAC remote request or heater temperature indicates
+                    // excess heat being available (diesel heater)
+                    10.0
                 } else {
                     3.0
                 }
@@ -507,11 +518,10 @@ impl MainState {
                 && get_parameter(ParameterId::BatteryTMax).value < 30.0
                 && (
                     // Only allow 100% duty cycle if battery < 3°C or
-                    // cabin > 15°C
+                    // cabin > 15°C, otherwise do 25% duty cycle
                     get_parameter(ParameterId::BatteryTMin).value < 3.0
                         || get_parameter(ParameterId::CabinT).value > 15.0
-                        || hw.millis() % 120000 < 60000
-                    // 50% duty cycle
+                        || hw.millis() % 120000 < 30000
                 ));
             let cool_battery = get_parameter(ParameterId::BatteryTMin).value > 23.0
                 && get_parameter(ParameterId::BatteryTMax).value > 30.0;
