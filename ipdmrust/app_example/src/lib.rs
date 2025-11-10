@@ -520,11 +520,16 @@ impl MainState {
             let heat_battery = (get_parameter(ParameterId::BatteryTMin).value < heat_battery_to_t
                 && get_parameter(ParameterId::BatteryTMax).value < 30.0
                 && (
-                    // Only allow 100% duty cycle if battery < 3°C or
-                    // cabin > 15°C, otherwise do 25% duty cycle
-                    get_parameter(ParameterId::BatteryTMin).value < 3.0
-                        || get_parameter(ParameterId::CabinT).value > 15.0
-                        || hw.millis() % 120000 < 30000
+                    // Allow 50% duty cycle if battery < 3°C OR cabin > 15°C
+                    ((get_parameter(ParameterId::BatteryTMin).value < 3.0
+                        || get_parameter(ParameterId::CabinT).value > 15.0) &&
+                                hw.millis() % 120000 < 30000)
+                    // Allow 25% duty cycle if battery < 3°C AND cabin > 8°C
+                    || ((get_parameter(ParameterId::BatteryTMin).value < 3.0
+                        && get_parameter(ParameterId::CabinT).value > 8.0) &&
+                                hw.millis() % 120000 < 30000)
+                    // Otherwise do 12.5% duty cycle
+                    || hw.millis() % 120000 < 15000
                 ));
             self.heating_battery = heat_battery;
             let cool_battery = get_parameter(ParameterId::BatteryTMin).value > 23.0
