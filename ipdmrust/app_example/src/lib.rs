@@ -134,6 +134,7 @@ pub struct MainState {
     last_dcdc_overcurrent_ts: u64,
     last_logged_values: [f32; NUM_PARAMETERS],
     watch_filter: ArrayString<20>,
+    heating_battery: bool,
 }
 
 impl MainState {
@@ -157,6 +158,7 @@ impl MainState {
             last_compressor_off_ts: 0,
             last_logged_values: [f32::NAN; NUM_PARAMETERS],
             watch_filter: ArrayString::new(),
+            heating_battery: false,
         }
     }
 
@@ -341,7 +343,8 @@ impl MainState {
         let heating_needed = (hw.get_digital_input(DigitalInput::Ignition)
             || get_parameter(ParameterId::HvacRequested).value > 0.5)
             && (get_parameter(ParameterId::CabinT).value.is_nan()
-                || get_parameter(ParameterId::CabinT).value < 28.0);
+                || get_parameter(ParameterId::CabinT).value < 28.0) ||
+            self.heating_battery;
 
         let target_temperature = {
             if get_parameter(ParameterId::CabinT).value.is_nan() {
@@ -509,7 +512,7 @@ impl MainState {
                     // excess heat being available (diesel heater)
                     10.0
                 } else {
-                    3.0
+                    5.0
                 }
             };
 
@@ -523,6 +526,7 @@ impl MainState {
                         || get_parameter(ParameterId::CabinT).value > 15.0
                         || hw.millis() % 120000 < 30000
                 ));
+            self.heating_battery = heat_battery;
             let cool_battery = get_parameter(ParameterId::BatteryTMin).value > 23.0
                 && get_parameter(ParameterId::BatteryTMax).value > 30.0;
             hw.set_digital_output(
