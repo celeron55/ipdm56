@@ -104,6 +104,16 @@ fn map_f32(x: f32, in_min: f32, in_max: f32, out_min: f32, out_max: f32) -> f32 
     (x - in_min) / (in_max - in_min) * (out_max - out_min) + out_min
 }
 
+fn get_charge_voltage_setting_mv() -> f32 {
+    let setting_value =
+        get_parameter(ParameterId::ChargeCompleteVoltageSettingRequested).value;
+    if setting_value.is_nan() {
+        4120.0
+    } else {
+        setting_value
+    }
+}
+
 const ObcDcdc12VSupply: DigitalOutput = DigitalOutput::HOUT1;
 const DcdcEnable: DigitalOutput = DigitalOutput::HOUT6;
 const BatteryPump: DigitalOutput = DigitalOutput::HOUT4;
@@ -315,7 +325,11 @@ impl MainState {
             charge_current += get_parameter(ParameterId::ObcDcc).value;
         }
 
-        if get_parameter(ParameterId::BatteryVMax).value >= 4.10 && charge_current < 2.0 {
+        if get_parameter(ParameterId::BatteryVMax).value >= 4.21 {
+            get_parameter(ParameterId::ChargeComplete).set_value(1.0, hw.millis());
+        } else if get_parameter(ParameterId::BatteryVMax).value >= get_charge_voltage_setting_mv() / 1000.0 + 0.01 {
+            get_parameter(ParameterId::ChargeComplete).set_value(1.0, hw.millis());
+        } else if get_parameter(ParameterId::BatteryVMax).value >= 4.10 && charge_current < 2.0 {
             get_parameter(ParameterId::ChargeComplete).set_value(1.0, hw.millis());
         } else if get_parameter(ParameterId::BatteryVMax).value < 4.04 {
             get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
@@ -664,13 +678,7 @@ impl MainState {
             // Send charge completion voltage setting to BMS
             let old_value: u16 =
                 get_parameter(ParameterId::BmsChargeCompleteVoltageSetting).value as u16;
-            let setting_value =
-                get_parameter(ParameterId::ChargeCompleteVoltageSettingRequested).value;
-            let new_value: u16 = if setting_value.is_nan() {
-                4120
-            } else {
-                setting_value as u16
-            };
+            let new_value = get_charge_voltage_setting_mv() as u16;
             if old_value != new_value {
                 self.send_setting_frame(hw, 0x120, 0, old_value, new_value);
             }
