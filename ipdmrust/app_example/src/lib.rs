@@ -333,6 +333,10 @@ impl MainState {
             get_parameter(ParameterId::ChargeComplete).set_value(1.0, hw.millis());
         } else if get_parameter(ParameterId::BatteryVMax).value < get_charge_voltage_setting_mv() / 1000.0 - 0.06 {
             get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
+        } else if get_parameter(ParameterId::BatteryVMax).value < get_charge_voltage_setting_mv() / 1000.0 && get_parameter(ParameterId::ReqHeaterPowerPercent).value > 5.0 {
+            // Heater is on and we're below target voltage. We want to supply
+            // the heater current via the OBC if the car is plugged in
+            get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
         }
 
         // ActivateEvse applies to both DC and AC charging
