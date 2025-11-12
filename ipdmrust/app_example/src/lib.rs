@@ -110,8 +110,17 @@ fn get_charge_voltage_setting_mv() -> f32 {
     if setting_value.is_nan() {
         4120.0
     } else {
-        setting_value
+        setting_value.min(4000.0).max(4200.0)
     }
+}
+
+fn get_current_heater_power() -> f32 {
+    if get_parameter(ParameterId::OutlanderHeaterHeating).value < 0.5 {
+        return 0.0;
+    }
+    let full_power = 3000.0;
+    let power_per_percent = full_power / 100.0;
+    get_parameter(ParameterId::ReqHeaterPowerPercent).value.min(0.0).max(100.0) * power_per_percent
 }
 
 const ObcDcdc12VSupply: DigitalOutput = DigitalOutput::HOUT1;
@@ -806,10 +815,11 @@ impl MainState {
             {
                 let ac_request_DCA = ac_v / dc_v * user_current_request_ACA;
                 let obc_limit_DCA = 12.0;
-                // TODO: If the heater is operating, allow that much extra
-                //       charging current so that it's possible to heat the
-                //       battery using AC power
-                let bms_limit_DCA = get_parameter(ParameterId::BmsMaxChargeCurrent).value;
+                // If the heater is operating, allow that much extra charging
+                // current so that it's possible to heat the battery using AC
+                // power
+                let heater_DCA = get_current_heater_power() / dc_v;
+                let bms_limit_DCA = get_parameter(ParameterId::BmsMaxChargeCurrent).value + heater_DCA;
                 (ac_request_DCA
                     .min(obc_limit_DCA)
                     .min(bms_limit_DCA)
