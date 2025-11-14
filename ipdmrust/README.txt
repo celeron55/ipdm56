@@ -32,6 +32,13 @@ $ ms_print massif.out.<pid> | less
 
 Compiling for physical hardware
 -------------------------------
+On fedora (something similar on others, to install `cc`):
+$ sudo dnf install gcc  # For cargo install
+
+$ rustup update
+$ rustup component add llvm-tools-preview
+$ rustup target add thumbv7em-none-eabihf
+
 $ cd embedded
 $ ./build_release.sh
 
