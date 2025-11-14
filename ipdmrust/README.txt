@@ -49,14 +49,15 @@ USB firmware update using automatic DFU mode:
 $ ./flash_dfu_release.sh /dev/ttyACM0
 
 USB firmware update using manual DFU mode:
-- Connect US
+- Connect USB
 - Hold EXT_RESET_N for 3 seconds (this activates reset with BOOT0 high)
 - The board should appear as "Product: STM32 BOOTLOADER"
 $ ./flash_dfu_release.sh
 - OR
 $ dfu-util -a 0 --dfuse-address 0x08000000  -D ../target/thumbv7em-none-eabihf/release/embedded.bin
 
-The raw command for UART firmware update is:
+The raw command for UART firmware update uses stm32flash:
+- Get it from https://sourceforge.net/p/stm32flash/
 $ stm32flash -R -w ../target/thumbv7em-none-eabihf/release/embedded.bin -b 115200 /dev/ttyUSB0
 
 Using an ST-Link v2 clone or similar:
