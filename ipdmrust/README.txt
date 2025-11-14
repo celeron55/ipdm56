@@ -32,8 +32,8 @@ $ ms_print massif.out.<pid> | less
 
 Compiling for physical hardware
 -------------------------------
-On fedora (something similar on others, to install `cc`):
-$ sudo dnf install gcc  # For cargo install
+On fedora (something similar on others, to install `cc` and `arm-none-eabi-objcopy`):
+$ sudo dnf install gcc arm-none-eabi-binutils-cs
 
 $ rustup update
 $ rustup component add llvm-tools-preview
