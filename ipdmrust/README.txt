@@ -56,8 +56,14 @@ $ ./flash_dfu_release.sh
 - OR
 $ dfu-util -a 0 --dfuse-address 0x08000000  -D ../target/thumbv7em-none-eabihf/release/embedded.bin
 
+Installing stm32flash for UART flashing:
+- Get it from https://sourceforge.net/p/stm32flash/ (stm32flash-0.7.tar.gz)
+$ ./configure
+$ make -j2
+$ ln -s $(pwd)/stm32flash ~/bin/stm32flash
+- Make sure ~/bin is in your $PATH
+
 The raw command for UART firmware update uses stm32flash:
-- Get it from https://sourceforge.net/p/stm32flash/
 $ stm32flash -R -w ../target/thumbv7em-none-eabihf/release/embedded.bin -b 115200 /dev/ttyUSB0
 
 Using an ST-Link v2 clone or similar:
