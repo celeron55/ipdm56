@@ -105,8 +105,7 @@ fn map_f32(x: f32, in_min: f32, in_max: f32, out_min: f32, out_max: f32) -> f32 
 }
 
 fn get_charge_voltage_setting_mv() -> f32 {
-    let setting_value =
-        get_parameter(ParameterId::ChargeCompleteVoltageSettingRequested).value;
+    let setting_value = get_parameter(ParameterId::ChargeCompleteVoltageSettingRequested).value;
     if setting_value.is_nan() {
         4120.0
     } else {
@@ -120,7 +119,11 @@ fn get_current_heater_power() -> f32 {
     }
     let full_power = 3000.0;
     let power_per_percent = full_power / 100.0;
-    get_parameter(ParameterId::ReqHeaterPowerPercent).value.min(0.0).max(100.0) * power_per_percent
+    get_parameter(ParameterId::ReqHeaterPowerPercent)
+        .value
+        .min(0.0)
+        .max(100.0)
+        * power_per_percent
 }
 
 const ObcDcdc12VSupply: DigitalOutput = DigitalOutput::HOUT1;
@@ -336,13 +339,20 @@ impl MainState {
 
         if get_parameter(ParameterId::BatteryVMax).value >= 4.21 {
             get_parameter(ParameterId::ChargeComplete).set_value(1.0, hw.millis());
-        } else if get_parameter(ParameterId::BatteryVMax).value >= get_charge_voltage_setting_mv() / 1000.0 + 0.01 {
+        } else if get_parameter(ParameterId::BatteryVMax).value
+            >= get_charge_voltage_setting_mv() / 1000.0 + 0.01
+        {
             get_parameter(ParameterId::ChargeComplete).set_value(1.0, hw.millis());
         } else if get_parameter(ParameterId::BatteryVMax).value >= 4.10 && charge_current < 2.0 {
             get_parameter(ParameterId::ChargeComplete).set_value(1.0, hw.millis());
-        } else if get_parameter(ParameterId::BatteryVMax).value < get_charge_voltage_setting_mv() / 1000.0 - 0.06 {
+        } else if get_parameter(ParameterId::BatteryVMax).value
+            < get_charge_voltage_setting_mv() / 1000.0 - 0.06
+        {
             get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
-        } else if get_parameter(ParameterId::BatteryVMax).value < get_charge_voltage_setting_mv() / 1000.0 && get_parameter(ParameterId::ReqHeaterPowerPercent).value > 5.0 {
+        } else if get_parameter(ParameterId::BatteryVMax).value
+            < get_charge_voltage_setting_mv() / 1000.0
+            && get_parameter(ParameterId::ReqHeaterPowerPercent).value > 5.0
+        {
             // Heater is on and we're below target voltage. We want to supply
             // the heater current via the OBC if the car is plugged in
             get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
@@ -546,14 +556,15 @@ impl MainState {
             };
 
             // Update battery solenoids
-            self.heating_battery =
-                    get_parameter(ParameterId::BatteryTMin).value < heat_battery_to_t &&
-                    get_parameter(ParameterId::BatteryTMax).value < 30.0;
+            self.heating_battery = get_parameter(ParameterId::BatteryTMin).value
+                < heat_battery_to_t
+                && get_parameter(ParameterId::BatteryTMax).value < 30.0;
 
-            let heat_battery = self.heating_battery && (
-                // Allow 100% duty cycle if ignition=false, hvac_req=false and
-                // plugged in
-                (ignition_input == false &&
+            let heat_battery = self.heating_battery
+                && (
+                    // Allow 100% duty cycle if ignition=false, hvac_req=false and
+                    // plugged in
+                    (ignition_input == false &&
                     get_parameter(ParameterId::HvacRequested).value < 0.5 &&
                     get_parameter(ParameterId::FoccciCPPWM).value > 2.0)
                 ||
@@ -568,7 +579,8 @@ impl MainState {
                     hw.millis() % 180000 < 45000)
                 ||
                 // Otherwise do 12.5% duty cycle
-                hw.millis() % 180000 < 22500);
+                hw.millis() % 180000 < 22500
+                );
 
             let cool_battery = get_parameter(ParameterId::BatteryTMin).value > 23.0
                 && get_parameter(ParameterId::BatteryTMax).value > 30.0;
@@ -829,7 +841,8 @@ impl MainState {
                 // current so that it's possible to heat the battery using AC
                 // power
                 let heater_DCA = get_current_heater_power() / dc_v;
-                let bms_limit_DCA = get_parameter(ParameterId::BmsMaxChargeCurrent).value + heater_DCA;
+                let bms_limit_DCA =
+                    get_parameter(ParameterId::BmsMaxChargeCurrent).value + heater_DCA;
                 (ac_request_DCA
                     .min(obc_limit_DCA)
                     .min(bms_limit_DCA)
