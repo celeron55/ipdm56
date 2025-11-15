@@ -555,12 +555,12 @@ impl MainState {
                 }
             };
 
-            // Update battery solenoids
             self.heating_battery = get_parameter(ParameterId::BatteryTMin).value
                 < heat_battery_to_t
                 && get_parameter(ParameterId::BatteryTMax).value < 30.0;
 
-            let heat_battery = self.heating_battery
+            // Update battery solenoid valves
+            let battery_heating_valve = self.heating_battery
                 && (
                     // Allow 100% duty cycle if ignition=false, hvac_req=false and
                     // plugged in
@@ -582,14 +582,14 @@ impl MainState {
                 hw.millis() % 180000 < 22500
                 );
 
-            let cool_battery = get_parameter(ParameterId::BatteryTMin).value > 23.0
+            let battery_cooling_valve = get_parameter(ParameterId::BatteryTMin).value > 23.0
                 && get_parameter(ParameterId::BatteryTMax).value > 30.0;
 
             hw.set_digital_output(
                 BatteryNeutralSolenoid,
-                allow_solenoids && !cool_battery && !heat_battery,
+                allow_solenoids && !battery_cooling_valve && !battery_heating_valve,
             );
-            hw.set_digital_output(BatteryHeatSolenoid, allow_solenoids && heat_battery);
+            hw.set_digital_output(BatteryHeatSolenoid, allow_solenoids && battery_heating_valve);
 
             // Update cooling fan
             // TODO: Trigger on inverter, motor and OBC temperature also
