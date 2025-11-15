@@ -20,6 +20,10 @@ use log::{debug, error, info, trace, warn};
 use micromath::F32Ext;
 use ringbuffer::RingBuffer;
 
+const BATTERY_HEATING_KP: f32 = 0.2;
+const BATTERY_HEATING_KD: f32 = 1.0;
+const BATTERY_HEATING_ALPHA: f32 = 0.2;
+
 fn string_contains_case_insensitive(haystack: &str, needle: &str) -> bool {
     if needle.is_empty() || haystack.len() < needle.len() {
         return needle.is_empty();
@@ -157,6 +161,9 @@ pub struct MainState {
     last_logged_values: [f32; NUM_PARAMETERS],
     watch_filter: ArrayString<20>,
     heating_battery: bool,
+    battery_heating_prev_battery_tmax: f32,
+    battery_heating_prev_millis: u64,
+    battery_heating_prev_d_tmax_dt: f32,
 }
 
 impl MainState {
@@ -181,6 +188,9 @@ impl MainState {
             last_logged_values: [f32::NAN; NUM_PARAMETERS],
             watch_filter: ArrayString::new(),
             heating_battery: false,
+            battery_heating_prev_battery_tmax: 0.0,
+            battery_heating_prev_millis: 0,
+            battery_heating_prev_d_tmax_dt: 0.0,
         }
     }
 
@@ -541,55 +551,102 @@ impl MainState {
                     // DC fast charging
                     25.0
                 } else if get_parameter(ParameterId::OutlanderHeaterT).value > 65.0 {
-                    // Heater temperature indicates lots of excess heat being
-                    // available (diesel heater)
+                    // Heater temperature indicates lots of excess heat being available (diesel heater)
                     22.0
                 } else if get_parameter(ParameterId::HvacRequested).value > 0.5
                     || get_parameter(ParameterId::OutlanderHeaterT).value > 55.0
                 {
-                    // HVAC remote request or heater temperature indicates
-                    // excess heat being available (diesel heater)
+                    // HVAC remote request or heater temperature indicates excess heat being available (diesel heater)
                     10.0
                 } else {
                     5.0
                 }
             };
 
-            self.heating_battery = get_parameter(ParameterId::BatteryTMin).value
-                < heat_battery_to_t
-                && get_parameter(ParameterId::BatteryTMax).value < 30.0;
+            let battery_tmin = get_parameter(ParameterId::BatteryTMin).value;
+            let battery_tmax = get_parameter(ParameterId::BatteryTMax).value;
+
+            // Gate: Only heat if below target and not too hot overall
+            self.heating_battery = battery_tmin < heat_battery_to_t && battery_tmax < 30.0;
+
+            let current_millis = hw.millis();
+
+            // Calculate proportional base PWM (0.0 to 1.0)
+            let error = if self.heating_battery {
+                heat_battery_to_t - battery_tmin
+            } else {
+                0.0
+            };
+            let prop_pwm = BATTERY_HEATING_KP * error;
+
+            // Apply availability factor (multiplier based on conditions)
+            let availability_factor = if ignition_input == false
+                && get_parameter(ParameterId::HvacRequested).value < 0.5
+                && get_parameter(ParameterId::FoccciCPPWM).value > 2.0
+            {
+                // Full availability if ignition=false, hvac_req=false and plugged in
+                1.0
+            } else if battery_tmin < 3.0 && get_parameter(ParameterId::CabinT).value > 15.0 {
+                // 50% availability
+                0.5
+            } else if battery_tmin < 3.0 && get_parameter(ParameterId::CabinT).value > 8.0 {
+                // 25% availability
+                0.25
+            } else {
+                // 12.5% default availability
+                0.125
+            };
+
+            let base_pwm = (prop_pwm * availability_factor).max(0.0).min(1.0);
+
+            // Compute smoothed negative derivative adjustment (minutes)
+            let delta_time = if self.battery_heating_prev_millis > 0 {
+                (current_millis - self.battery_heating_prev_millis) as f32 / 60000.0
+            } else {
+                0.0
+            };
+            // °C/min
+            let raw_d_tmax_dt = if delta_time > 0.0 {
+                (battery_tmax - self.battery_heating_prev_battery_tmax) / delta_time
+            } else {
+                0.0
+            };
+            let smoothed_d_tmax_dt = if delta_time > 0.0 {
+                BATTERY_HEATING_ALPHA * raw_d_tmax_dt
+                    + (1.0 - BATTERY_HEATING_ALPHA) * self.battery_heating_prev_d_tmax_dt
+            } else {
+                self.battery_heating_prev_d_tmax_dt
+            };
+            // Subtract this for negative derivative
+            let derivative_adjust = if self.heating_battery {
+                BATTERY_HEATING_KD * smoothed_d_tmax_dt
+            } else {
+                0.0
+            };
+
+            // Adjust PWM: reduce when rising fast, boost when falling fast
+            let adjusted_pwm = (base_pwm - derivative_adjust).max(0.0).min(1.0);
 
             // Update battery solenoid valves
+            let period_ms = 180000; // 3 minutes
             let battery_heating_valve = self.heating_battery
-                && (
-                    // Allow 100% duty cycle if ignition=false, hvac_req=false and
-                    // plugged in
-                    (ignition_input == false &&
-                    get_parameter(ParameterId::HvacRequested).value < 0.5 &&
-                    get_parameter(ParameterId::FoccciCPPWM).value > 2.0)
-                ||
-                // Allow 50% duty cycle if battery < 3°C AND cabin > 15°C
-                ((get_parameter(ParameterId::BatteryTMin).value < 3.0 &&
-                        get_parameter(ParameterId::CabinT).value > 15.0) &&
-                    hw.millis() % 180000 < 90000)
-                ||
-                // Allow 25% duty cycle if battery < 3°C AND cabin > 8°C
-                ((get_parameter(ParameterId::BatteryTMin).value < 3.0 &&
-                        get_parameter(ParameterId::CabinT).value > 8.0) &&
-                    hw.millis() % 180000 < 45000)
-                ||
-                // Otherwise do 12.5% duty cycle
-                hw.millis() % 180000 < 22500
-                );
+                && ((current_millis % period_ms) < (adjusted_pwm * period_ms as f32) as u64);
 
-            let battery_cooling_valve = get_parameter(ParameterId::BatteryTMin).value > 23.0
-                && get_parameter(ParameterId::BatteryTMax).value > 30.0;
+            let battery_cooling_valve = battery_tmin > 23.0 && battery_tmax > 30.0;
 
             hw.set_digital_output(
                 BatteryNeutralSolenoid,
                 allow_solenoids && !battery_cooling_valve && !battery_heating_valve,
             );
-            hw.set_digital_output(BatteryHeatSolenoid, allow_solenoids && battery_heating_valve);
+            hw.set_digital_output(
+                BatteryHeatSolenoid,
+                allow_solenoids && battery_heating_valve,
+            );
+
+            // Update state
+            self.battery_heating_prev_battery_tmax = battery_tmax;
+            self.battery_heating_prev_millis = current_millis;
+            self.battery_heating_prev_d_tmax_dt = smoothed_d_tmax_dt;
 
             // Update cooling fan
             // TODO: Trigger on inverter, motor and OBC temperature also
