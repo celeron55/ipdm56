@@ -546,23 +546,33 @@ impl MainState {
             };
 
             // Update battery solenoids
-            let heat_battery = (get_parameter(ParameterId::BatteryTMin).value < heat_battery_to_t
-                && get_parameter(ParameterId::BatteryTMax).value < 30.0
-                && (
-                    // Allow 50% duty cycle if battery < 3°C AND cabin > 15°C
-                    ((get_parameter(ParameterId::BatteryTMin).value < 3.0
-                        && get_parameter(ParameterId::CabinT).value > 15.0) &&
-                                hw.millis() % 120000 < 60000)
-                    // Allow 25% duty cycle if battery < 3°C AND cabin > 8°C
-                    || ((get_parameter(ParameterId::BatteryTMin).value < 3.0
-                        && get_parameter(ParameterId::CabinT).value > 8.0) &&
-                                hw.millis() % 120000 < 30000)
-                    // Otherwise do 12.5% duty cycle
-                    || hw.millis() % 120000 < 15000
-                ));
-            self.heating_battery = heat_battery;
+            self.heating_battery =
+                    get_parameter(ParameterId::BatteryTMin).value < heat_battery_to_t &&
+                    get_parameter(ParameterId::BatteryTMax).value < 30.0;
+
+            let heat_battery = self.heating_battery && (
+                // Allow 100% duty cycle if ignition=false, hvac_req=false and
+                // plugged in
+                (ignition_input == false &&
+                    get_parameter(ParameterId::HvacRequested).value < 0.5 &&
+                    get_parameter(ParameterId::FoccciCPPWM).value > 2.0)
+                ||
+                // Allow 50% duty cycle if battery < 3°C AND cabin > 15°C
+                ((get_parameter(ParameterId::BatteryTMin).value < 3.0 &&
+                        get_parameter(ParameterId::CabinT).value > 15.0) &&
+                    hw.millis() % 180000 < 90000)
+                ||
+                // Allow 25% duty cycle if battery < 3°C AND cabin > 8°C
+                ((get_parameter(ParameterId::BatteryTMin).value < 3.0 &&
+                        get_parameter(ParameterId::CabinT).value > 8.0) &&
+                    hw.millis() % 180000 < 45000)
+                ||
+                // Otherwise do 12.5% duty cycle
+                hw.millis() % 180000 < 22500);
+
             let cool_battery = get_parameter(ParameterId::BatteryTMin).value > 23.0
                 && get_parameter(ParameterId::BatteryTMax).value > 30.0;
+
             hw.set_digital_output(
                 BatteryNeutralSolenoid,
                 allow_solenoids && !cool_battery && !heat_battery,
