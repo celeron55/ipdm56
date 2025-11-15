@@ -113,7 +113,7 @@ fn get_charge_voltage_setting_mv() -> f32 {
     if setting_value.is_nan() {
         4120.0
     } else {
-        setting_value.min(4000.0).max(4200.0)
+        setting_value.clamp(4000.0, 4200.0)
     }
 }
 
