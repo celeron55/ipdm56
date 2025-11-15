@@ -371,7 +371,8 @@ impl MainState {
         // ActivateEvse applies to both DC and AC charging
         let activate_evse = get_parameter(ParameterId::FoccciCPPWM).value >= 1.0
             && get_parameter(ParameterId::FoccciCPPWM).value <= 96.0
-            && get_parameter(ParameterId::ChargeComplete).value < 0.5;
+            && (get_parameter(ParameterId::ChargeComplete).value < 0.5
+                || get_parameter(ParameterId::ChargeComplete).value.is_nan());
 
         get_parameter(ParameterId::ActivateEvse)
             .set_value(if activate_evse { 1.0 } else { 0.0 }, hw.millis());
@@ -380,7 +381,8 @@ impl MainState {
         // Foccci into AC charging mode
         let activate_obc = get_parameter(ParameterId::FoccciCPPWM).value >= 8.0
             && get_parameter(ParameterId::FoccciCPPWM).value <= 96.0
-            && get_parameter(ParameterId::ChargeComplete).value < 0.5;
+            && (get_parameter(ParameterId::ChargeComplete).value < 0.5
+                || get_parameter(ParameterId::ChargeComplete).value.is_nan());
 
         get_parameter(ParameterId::ActivateObc)
             .set_value(if activate_evse { 1.0 } else { 0.0 }, hw.millis());
