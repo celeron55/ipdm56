@@ -899,8 +899,13 @@ impl MainState {
                 let obc_limit_DCA = 12.0;
                 // If the heater is operating, allow that much extra charging
                 // current so that it's possible to heat the battery using AC
-                // power
-                let heater_DCA = get_current_heater_power() / dc_v;
+                // power. But only if the battery isn't full
+                let heater_DCA =
+                    if get_parameter(ParameterId::BatteryVMax).value >= 4.18 {
+                        0.0
+                    } else {
+                        get_current_heater_power() / dc_v
+                    };
                 let bms_limit_DCA =
                     get_parameter(ParameterId::BmsMaxChargeCurrent).value + heater_DCA;
                 (ac_request_DCA
