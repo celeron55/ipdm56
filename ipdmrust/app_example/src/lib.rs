@@ -368,11 +368,11 @@ impl MainState {
             get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
         }
 
-        // ActivateEvse applies to both DC and AC charging
-        // Turn it on and keep it on any time there's an EVSE connected, so that
-        // we don't accidentally start clicking the EVSEs relays due to some
-        // dumb oscillation
-        let activate_evse = get_parameter(ParameterId::FoccciCPPWM).value >= 1.0
+        // ActivateEvse sets Foccci's AcObcState (and affects some other things)
+        // Turn it on and keep it on any time there's an AC EVSE connected, so
+        // that we don't accidentally start clicking the EVSEs relays due to
+        // some dumb oscillation
+        let activate_evse = get_parameter(ParameterId::FoccciCPPWM).value >= 8.0
             && get_parameter(ParameterId::FoccciCPPWM).value <= 96.0;
 
         get_parameter(ParameterId::ActivateEvse)
