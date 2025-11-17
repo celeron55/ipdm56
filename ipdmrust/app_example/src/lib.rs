@@ -924,35 +924,38 @@ impl MainState {
 
             let ac_v = get_parameter(ParameterId::AcVoltage).value;
             let dc_v = get_parameter(ParameterId::ObcDcv).value;
-            let dc_current_request_Ax10: u8 =
-                if !get_parameter(ParameterId::BmsAllowedVMax).value.is_nan()
+            let dc_current_request_Ax10: u8 = if (get_parameter(ParameterId::BmsMaxChargeCurrent)
+                .value
+                .is_nan()
+                || get_parameter(ParameterId::BmsMaxChargeCurrent).value < 0.5)
+                && (!get_parameter(ParameterId::BmsAllowedVMax).value.is_nan()
                     && get_parameter(ParameterId::BatteryVMax).value
-                        > get_parameter(ParameterId::BmsAllowedVMax).value
-                {
-                    0
-                } else if get_parameter(ParameterId::MainContactor).value > 0.5
-                    && get_parameter(ParameterId::ActivateEvse).value > 0.5
-                {
-                    let ac_request_DCA = ac_v / dc_v * user_current_request_ACA;
-                    let obc_limit_DCA = 12.0;
-                    // If the heater is operating, allow that much extra charging
-                    // current so that it's possible to heat the battery using AC
-                    // power. But only if the battery isn't full
-                    let heater_DCA = if get_parameter(ParameterId::BatteryVMax).value >= 4.18 {
-                        0.0
-                    } else {
-                        get_current_heater_power() / dc_v
-                    };
-                    let bms_limit_DCA =
-                        get_parameter(ParameterId::BmsMaxChargeCurrent).value + heater_DCA;
-                    (ac_request_DCA
-                        .min(obc_limit_DCA)
-                        .min(bms_limit_DCA)
-                        .max(0.0)
-                        * 10.0) as u8
+                        > get_parameter(ParameterId::BmsAllowedVMax).value)
+            {
+                0
+            } else if get_parameter(ParameterId::MainContactor).value > 0.5
+                && get_parameter(ParameterId::ActivateEvse).value > 0.5
+            {
+                let ac_request_DCA = ac_v / dc_v * user_current_request_ACA;
+                let obc_limit_DCA = 12.0;
+                // If the heater is operating, allow that much extra charging
+                // current so that it's possible to heat the battery using AC
+                // power. But only if the battery isn't full
+                let heater_DCA = if get_parameter(ParameterId::BatteryVMax).value >= 4.18 {
+                    0.0
                 } else {
-                    0
+                    get_current_heater_power() / dc_v
                 };
+                let bms_limit_DCA =
+                    get_parameter(ParameterId::BmsMaxChargeCurrent).value + heater_DCA;
+                (ac_request_DCA
+                    .min(obc_limit_DCA)
+                    .min(bms_limit_DCA)
+                    .max(0.0)
+                    * 10.0) as u8
+            } else {
+                0
+            };
 
             // Outlander OBC control
             self.send_normal_frame(
