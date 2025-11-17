@@ -579,6 +579,11 @@ impl MainState {
                 {
                     // HVAC remote request or heater temperature indicates excess heat being available (diesel heater)
                     10.0
+                } else if get_parameter(ParameterId::ChargeComplete).value >= 0.5
+                    && get_parameter(ParameterId::FoccciCPPWM).value > 2.0
+                {
+                    // Plugged and complete: allow cooling to -18°C
+                    -18.0
                 } else {
                     5.0
                 }
