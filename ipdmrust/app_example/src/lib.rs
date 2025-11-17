@@ -404,7 +404,7 @@ impl MainState {
                 || get_parameter(ParameterId::ReqHeaterPowerPercent).value > 5.0);
 
         get_parameter(ParameterId::ActivateObc)
-            .set_value(if activate_evse { 1.0 } else { 0.0 }, hw.millis());
+            .set_value(if activate_obc { 1.0 } else { 0.0 }, hw.millis());
     }
 
     fn update_heater(&mut self, hw: &mut dyn HardwareInterface) {
