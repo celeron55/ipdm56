@@ -428,4 +428,31 @@ define_parameters! {
             scale: 0.1,
         },
     },
+    DcdcT {
+        display_name: "DCDC T",
+        unit: "degC",
+        can_map: CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x377).unwrap()),
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
+                let t1 = data[4] as i8 - 40;
+                let t2 = data[5] as i8 - 40;
+                let t3 = data[6] as i8 - 40;
+                Some((if t1 > t2 { if t1 > t3 { t1 } else { t3 } } else { if t2 > t3 { t2 } else { t3 } }) as f32)
+            }),
+            scale: 1.0,
+        },
+    },
+    ObcT {
+        display_name: "OBC T",
+        unit: "degC",
+        can_map: CanMap {
+            id: bxcan::Id::Standard(StandardId::new(0x389).unwrap()),
+            bits: CanBitSelection::Function(|data: &[u8]| -> Option<f32> {
+                let t1 = data[3] as i8 - 40;
+                let t2 = data[4] as i8 - 40;
+                Some((if t1 > t2 { t1 } else { t2 }) as f32)
+            }),
+            scale: 1.0,
+        },
+    },
 }

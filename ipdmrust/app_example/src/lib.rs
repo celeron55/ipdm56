@@ -690,6 +690,22 @@ impl MainState {
                         || get_parameter(ParameterId::OutlanderHeaterPowerPercent).value > 0.5
                         || get_parameter(ParameterId::OutlanderHeaterT).value > 30.0),
             );
+
+            // Update battery pump
+            // NOTE: TODO: FIXME: Not sure which output controls the electronics
+            // cooling pump, so electronics temperatures are included here until
+            // that's determined
+            hw.set_digital_output(
+                BatteryPump,
+                allow_solenoids
+                    && (ignition_input
+                        || self.heating_battery
+                        || get_parameter(ParameterId::DcdcCurrent).value > 10.0
+                        || get_parameter(ParameterId::ActivateObc).value > 0.5
+                        || get_parameter(ParameterId::DcdcT).value > 45.0
+                        || get_parameter(ParameterId::ObcT).value > 45.0
+                        || get_parameter(ParameterId::ChargeComplete).value < 0.5),
+            );
         }
 
         // Wakeup line
@@ -767,12 +783,6 @@ impl MainState {
         // Update DC/DC enable
         hw.set_digital_output(
             DcdcEnable,
-            get_parameter(ParameterId::MainContactor).value > 0.5,
-        );
-
-        // Update battery pump
-        hw.set_digital_output(
-            BatteryPump,
             get_parameter(ParameterId::MainContactor).value > 0.5,
         );
 
