@@ -356,6 +356,12 @@ define_parameters! {
         display_name: "ChargeComplete",
         unit: "",
     },
+    BmsAllowedVMax {
+        display_name: "BmsAllowedVMax",
+        decimals: 2,
+        unit: "V",
+        log_threshold: 0.1,
+    },
     LastSeenSoc {
         display_name: "SoC (last seen)",
         unit: "%",

@@ -212,6 +212,8 @@ impl MainState {
 
         self.update_outputs(hw);
 
+        self.update_bms_allowed_vmax(hw);
+
         self.update_charging(hw);
 
         self.update_aircon(hw);
@@ -338,6 +340,27 @@ impl MainState {
         );
     }
 
+    fn update_bms_allowed_vmax(&mut self, hw: &mut dyn HardwareInterface) {
+        let battery_vmax = get_parameter(ParameterId::BatteryVMax).value;
+        let bms_max_charge = get_parameter(ParameterId::BmsMaxChargeCurrent).value;
+        let cp_pwm = get_parameter(ParameterId::FoccciCPPWM).value;
+
+        if cp_pwm < 3.0 {
+            if !battery_vmax.is_nan() {
+                get_parameter(ParameterId::BmsAllowedVMax)
+                    .set_value(battery_vmax.clamp(3.20, 4.20), hw.millis());
+            }
+        } else if !bms_max_charge.is_nan() && bms_max_charge > 0.0 {
+            let present_allowed = get_parameter(ParameterId::BmsAllowedVMax).value;
+            if !battery_vmax.is_nan()
+                && (present_allowed.is_nan() || battery_vmax > present_allowed)
+            {
+                get_parameter(ParameterId::BmsAllowedVMax)
+                    .set_value(battery_vmax.clamp(3.20, 4.20), hw.millis());
+            }
+        }
+    }
+
     fn update_charging(&mut self, hw: &mut dyn HardwareInterface) {
         let mut charge_current = 0.0;
         if !get_parameter(ParameterId::CcsCurrent).value.is_nan() {
@@ -359,13 +382,6 @@ impl MainState {
             < get_charge_voltage_setting_mv() / 1000.0 - 0.06
         {
             get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
-        } else if get_parameter(ParameterId::BatteryVMax).value
-            < get_charge_voltage_setting_mv() / 1000.0
-            && get_parameter(ParameterId::ReqHeaterPowerPercent).value > 5.0
-        {
-            // Heater is on and we're below target voltage. We want to supply
-            // the heater current via the OBC if the car is plugged in
-            get_parameter(ParameterId::ChargeComplete).set_value(0.0, hw.millis());
         }
 
         // ActivateEvse sets Foccci's AcObcState (and affects some other things)
@@ -379,11 +395,13 @@ impl MainState {
             .set_value(if activate_evse { 1.0 } else { 0.0 }, hw.millis());
 
         // ActivateObc applies only to AC charging and ends up instructing
-        // Foccci into AC charging mode
+        // Foccci into AC charging mode. We want to activate the OBC if charging
+        // or heating, but only if we're plugged in
         let activate_obc = get_parameter(ParameterId::FoccciCPPWM).value >= 8.0
             && get_parameter(ParameterId::FoccciCPPWM).value <= 96.0
             && (get_parameter(ParameterId::ChargeComplete).value < 0.5
-                || get_parameter(ParameterId::ChargeComplete).value.is_nan());
+                || get_parameter(ParameterId::ChargeComplete).value.is_nan()
+                || get_parameter(ParameterId::ReqHeaterPowerPercent).value > 5.0);
 
         get_parameter(ParameterId::ActivateObc)
             .set_value(if activate_evse { 1.0 } else { 0.0 }, hw.millis());
@@ -891,31 +909,35 @@ impl MainState {
 
             let ac_v = get_parameter(ParameterId::AcVoltage).value;
             let dc_v = get_parameter(ParameterId::ObcDcv).value;
-            let dc_current_request_Ax10: u8 = if get_parameter(ParameterId::MainContactor).value
-                > 0.5
-                && get_parameter(ParameterId::ActivateEvse).value > 0.5
-            {
-                let ac_request_DCA = ac_v / dc_v * user_current_request_ACA;
-                let obc_limit_DCA = 12.0;
-                // If the heater is operating, allow that much extra charging
-                // current so that it's possible to heat the battery using AC
-                // power. But only if the battery isn't full
-                let heater_DCA =
-                    if get_parameter(ParameterId::BatteryVMax).value >= 4.18 {
+            let dc_current_request_Ax10: u8 =
+                if !get_parameter(ParameterId::BmsAllowedVMax).value.is_nan()
+                    && get_parameter(ParameterId::BatteryVMax).value
+                        > get_parameter(ParameterId::BmsAllowedVMax).value
+                {
+                    0
+                } else if get_parameter(ParameterId::MainContactor).value > 0.5
+                    && get_parameter(ParameterId::ActivateEvse).value > 0.5
+                {
+                    let ac_request_DCA = ac_v / dc_v * user_current_request_ACA;
+                    let obc_limit_DCA = 12.0;
+                    // If the heater is operating, allow that much extra charging
+                    // current so that it's possible to heat the battery using AC
+                    // power. But only if the battery isn't full
+                    let heater_DCA = if get_parameter(ParameterId::BatteryVMax).value >= 4.18 {
                         0.0
                     } else {
                         get_current_heater_power() / dc_v
                     };
-                let bms_limit_DCA =
-                    get_parameter(ParameterId::BmsMaxChargeCurrent).value + heater_DCA;
-                (ac_request_DCA
-                    .min(obc_limit_DCA)
-                    .min(bms_limit_DCA)
-                    .max(0.0)
-                    * 10.0) as u8
-            } else {
-                0
-            };
+                    let bms_limit_DCA =
+                        get_parameter(ParameterId::BmsMaxChargeCurrent).value + heater_DCA;
+                    (ac_request_DCA
+                        .min(obc_limit_DCA)
+                        .min(bms_limit_DCA)
+                        .max(0.0)
+                        * 10.0) as u8
+                } else {
+                    0
+                };
 
             // Outlander OBC control
             self.send_normal_frame(
