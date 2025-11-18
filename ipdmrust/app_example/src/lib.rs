@@ -433,10 +433,10 @@ impl MainState {
                     get_parameter(ParameterId::CabinT).value,
                     15.0,
                     35.0,
-                    60.0,
+                    70.0,
                     35.0,
                 )
-                .clamp(35.0, 60.0)
+                .clamp(35.0, 70.0)
             }
         };
 
@@ -571,21 +571,21 @@ impl MainState {
                 {
                     // DC fast charging
                     25.0
-                } else if get_parameter(ParameterId::OutlanderHeaterT).value > 65.0 {
+                } else if get_parameter(ParameterId::OutlanderHeaterT).value > 73.0 {
                     // Heater temperature indicates lots of excess heat being available (diesel heater)
                     22.0
                 } else if get_parameter(ParameterId::HvacRequested).value > 0.5
-                    || get_parameter(ParameterId::OutlanderHeaterT).value > 55.0
+                    || get_parameter(ParameterId::OutlanderHeaterT).value > 65.0
                 {
                     // HVAC remote request or heater temperature indicates excess heat being available (diesel heater)
-                    10.0
+                    7.0
                 } else if get_parameter(ParameterId::ChargeComplete).value >= 0.5
                     && get_parameter(ParameterId::FoccciCPPWM).value > 2.0
                 {
                     // Plugged and complete: allow cooling to -18°C
                     -18.0
                 } else {
-                    5.0
+                    3.0
                 }
             };
 
