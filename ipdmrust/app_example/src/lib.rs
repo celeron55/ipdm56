@@ -605,6 +605,10 @@ impl MainState {
             };
             let prop_pwm = BATTERY_HEATING_KP * error;
 
+            // Diagnostic logging
+            info!("Battery heating: target={:.1}°C, tmin={:.1}°C, tmax={:.1}°C, heating={}, error={:.2}",
+                  heat_battery_to_t, battery_tmin, battery_tmax, self.heating_battery, error);
+
             // Apply availability factor (multiplier based on conditions)
             let availability_factor = if ignition_input == false
                 && get_parameter(ParameterId::HvacRequested).value < 0.5
@@ -655,8 +659,13 @@ impl MainState {
 
             // Update battery solenoid valves
             let period_ms = 180000; // 3 minutes
-            let battery_heating_valve = self.heating_battery
-                && ((current_millis % period_ms) < (adjusted_pwm * period_ms as f32) as u64);
+            let pwm_on_time_ms = (adjusted_pwm * period_ms as f32) as u64;
+            let cycle_position = current_millis % period_ms;
+            let battery_heating_valve = self.heating_battery && (cycle_position < pwm_on_time_ms);
+
+            // PWM diagnostic logging
+            info!("PWM: prop={:.3}, avail={:.3}, base={:.3}, deriv_adj={:.3}, final={:.3}, on_time={}ms, cycle_pos={}ms, valve={}",
+                  prop_pwm, availability_factor, base_pwm, derivative_adjust, adjusted_pwm, pwm_on_time_ms, cycle_position, battery_heating_valve);
 
             let battery_cooling_valve = battery_tmin > 23.0 && battery_tmax > 30.0;
 
