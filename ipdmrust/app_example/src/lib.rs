@@ -636,20 +636,23 @@ impl MainState {
                 0.0
             };
             // °C/min
-            let raw_d_tmax_dt = if delta_time > 0.0 {
+            let raw_d_tmax_dt = if delta_time > 0.0 && !battery_tmax.is_nan() && !self.battery_heating_prev_battery_tmax.is_nan() {
                 (battery_tmax - self.battery_heating_prev_battery_tmax) / delta_time
             } else {
                 0.0
             };
-            let smoothed_d_tmax_dt = if delta_time > 0.0 {
+            let smoothed_d_tmax_dt = if delta_time > 0.0 && !raw_d_tmax_dt.is_nan() && !self.battery_heating_prev_d_tmax_dt.is_nan() {
                 BATTERY_HEATING_ALPHA * raw_d_tmax_dt
                     + (1.0 - BATTERY_HEATING_ALPHA) * self.battery_heating_prev_d_tmax_dt
-            } else {
+            } else if !self.battery_heating_prev_d_tmax_dt.is_nan() {
                 self.battery_heating_prev_d_tmax_dt
+            } else {
+                0.0
             };
             // Subtract this for negative derivative
             let derivative_adjust = if self.heating_battery {
-                BATTERY_HEATING_KD * smoothed_d_tmax_dt
+                let deriv_val = BATTERY_HEATING_KD * smoothed_d_tmax_dt;
+                if deriv_val.is_nan() { 0.0 } else { deriv_val }
             } else {
                 0.0
             };
@@ -679,9 +682,9 @@ impl MainState {
             );
 
             // Update state
-            self.battery_heating_prev_battery_tmax = battery_tmax;
+            self.battery_heating_prev_battery_tmax = if !battery_tmax.is_nan() { battery_tmax } else { self.battery_heating_prev_battery_tmax };
             self.battery_heating_prev_millis = current_millis;
-            self.battery_heating_prev_d_tmax_dt = smoothed_d_tmax_dt;
+            self.battery_heating_prev_d_tmax_dt = if !smoothed_d_tmax_dt.is_nan() { smoothed_d_tmax_dt } else { 0.0 };
 
             // Update cooling fan
             // TODO: Trigger on inverter, motor and OBC temperature also
