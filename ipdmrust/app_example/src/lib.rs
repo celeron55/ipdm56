@@ -712,6 +712,7 @@ impl MainState {
                 allow_solenoids
                     && (ignition_input
                         || self.heating_battery
+                        || battery_tmax > 25.0
                         || get_parameter(ParameterId::DcdcCurrent).value > 10.0
                         || get_parameter(ParameterId::ActivateObc).value > 0.5
                         || get_parameter(ParameterId::DcdcT).value > 45.0
