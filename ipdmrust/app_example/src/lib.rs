@@ -909,6 +909,17 @@ impl MainState {
 
             self.send_normal_frame(hw, 0x206, &data);
         }
+
+        if(!hw.get_digital_input(DigitalInput::Ignition)){
+            // Command the power steering pump off if ignition is off
+            // Sometimes it stays running after turning ignition off, and I'm
+            // not sure why that is. Sending this should fix that
+
+            // [0x11, 0x11, ...] would be on
+            let mut data = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+
+            self.send_normal_frame(hw, 0x110, &data);
+        }
     }
 
     fn send_can_200ms(&mut self, hw: &mut dyn HardwareInterface) {
