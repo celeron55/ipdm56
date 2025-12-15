@@ -424,7 +424,7 @@ impl MainState {
                 map_f32(
                     get_parameter(ParameterId::CabinT).value,
                     5.0,
-                    30.0,
+                    20.0,
                     55.0,
                     35.0,
                 )
