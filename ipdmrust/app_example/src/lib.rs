@@ -579,13 +579,23 @@ impl MainState {
                 {
                     // HVAC remote request or heater temperature indicates excess heat being available (diesel heater)
                     7.0
-                } else if get_parameter(ParameterId::ChargeComplete).value >= 0.5
-                    && get_parameter(ParameterId::FoccciCPPWM).value > 2.0
-                {
-                    // Plugged and complete: allow cooling to -18°C
+                } else if get_parameter(ParameterId::FoccciCPPWM).value > 2.0 &&
+                        get_parameter(ParameterId::ChargeComplete).value < 0.5 {
+                    // Plugged in and charge incomplete: heat to 3°C to maintain
+                    // chargeability
+                    3.0
+                } else if ignition_input {
+                    // Ignition key turned on (but no excess heat available)
+                    // Heat battery close to 3°C for reasonable performance
+                    3.0
+                } else if get_parameter(ParameterId::LastSeenSoc) > 70.0 {
+                    // Car is not being driven or charged, but SOC > 70%
+                    // Heat battery if it goes below -18°C
                     -18.0
                 } else {
-                    3.0
+                    // Battery SoC < 70%
+                    // Don't heat battery
+                    -40.0
                 }
             };
 
