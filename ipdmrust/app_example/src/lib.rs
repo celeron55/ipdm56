@@ -20,6 +20,9 @@ use log::{debug, error, info, trace, warn};
 use micromath::F32Ext;
 use ringbuffer::RingBuffer;
 
+// Two Outlander heaters in parallel at 263V nominal
+const HEATER_FULL_POWER_W: f32 = 6000.0;
+
 const BATTERY_HEATING_KP: f32 = 0.2;
 const BATTERY_HEATING_KD: f32 = 1.0;
 const BATTERY_HEATING_ALPHA: f32 = 0.2;
@@ -121,8 +124,7 @@ fn get_current_heater_power() -> f32 {
     if get_parameter(ParameterId::OutlanderHeaterHeating).value < 0.5 {
         return 0.0;
     }
-    let full_power = 3000.0;
-    let power_per_percent = full_power / 100.0;
+    let power_per_percent = HEATER_FULL_POWER_W / 100.0;
     get_parameter(ParameterId::ReqHeaterPowerPercent)
         .value
         .min(0.0)
@@ -588,7 +590,7 @@ impl MainState {
                     // Ignition key turned on (but no excess heat available)
                     // Heat battery close to 3°C for reasonable performance
                     3.0
-                } else if get_parameter(ParameterId::LastSeenSoc) > 70.0 {
+                } else if get_parameter(ParameterId::LastSeenSoc).value > 70.0 {
                     // Car is not being driven or charged, but SOC > 70%
                     // Heat battery if it goes below -18°C
                     -18.0
