@@ -76,16 +76,16 @@ $ cargo run --release
 Flashing physical hardware via UI8D UART bridge
 -----------------------------------------------
 
-Ideally you just run this:
+This should work:
 $ cd embedded
 $ ./build_release.sh
 $ ./flash_uart_release.sh /dev/ttyUSB0
 
-But actually for some reason that doesn't work very well and you need to do it manually:
+If it doesn't try doing it without the script:
 $ cd embedded
 $ ./build_release.sh
 $ picocom --baud 115200 -r -l -c -e x /dev/ttyUSB0
-# Enter the "dfu" command in picocom and exit (CTRL+X CTRL+Q)
+# Enter the "dfu" command in picocom, then press return and exit (CTRL+X CTRL+Q)
 $ stm32flash -R -w ../target/thumbv7em-none-eabihf/release/embedded.bin -b 115200 /dev/ttyUSB0
 
 Monitoring using USB serial
