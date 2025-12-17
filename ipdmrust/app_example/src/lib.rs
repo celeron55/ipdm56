@@ -423,7 +423,7 @@ impl MainState {
                 // Remotely activated heating
                 map_f32(
                     get_parameter(ParameterId::CabinT).value,
-                    5.0,
+                    12.0,
                     20.0,
                     55.0,
                     35.0,
@@ -433,7 +433,7 @@ impl MainState {
                 // Locally activated heating (via ignition key)
                 map_f32(
                     get_parameter(ParameterId::CabinT).value,
-                    15.0,
+                    22.0,
                     35.0,
                     70.0,
                     35.0,
