@@ -581,8 +581,9 @@ impl MainState {
                 {
                     // HVAC remote request or heater temperature indicates excess heat being available (diesel heater)
                     7.0
-                } else if get_parameter(ParameterId::FoccciCPPWM).value > 2.0 &&
-                        get_parameter(ParameterId::ChargeComplete).value < 0.5 {
+                } else if get_parameter(ParameterId::FoccciCPPWM).value > 2.0
+                    && get_parameter(ParameterId::ChargeComplete).value < 0.5
+                {
                     // Plugged in and charge incomplete: heat to 3°C to maintain
                     // chargeability
                     3.0
@@ -648,12 +649,18 @@ impl MainState {
                 0.0
             };
             // °C/min
-            let raw_d_tmax_dt = if delta_time > 0.0 && !battery_tmax.is_nan() && !self.battery_heating_prev_battery_tmax.is_nan() {
+            let raw_d_tmax_dt = if delta_time > 0.0
+                && !battery_tmax.is_nan()
+                && !self.battery_heating_prev_battery_tmax.is_nan()
+            {
                 (battery_tmax - self.battery_heating_prev_battery_tmax) / delta_time
             } else {
                 0.0
             };
-            let smoothed_d_tmax_dt = if delta_time > 0.0 && !raw_d_tmax_dt.is_nan() && !self.battery_heating_prev_d_tmax_dt.is_nan() {
+            let smoothed_d_tmax_dt = if delta_time > 0.0
+                && !raw_d_tmax_dt.is_nan()
+                && !self.battery_heating_prev_d_tmax_dt.is_nan()
+            {
                 BATTERY_HEATING_ALPHA * raw_d_tmax_dt
                     + (1.0 - BATTERY_HEATING_ALPHA) * self.battery_heating_prev_d_tmax_dt
             } else if !self.battery_heating_prev_d_tmax_dt.is_nan() {
@@ -664,7 +671,11 @@ impl MainState {
             // Subtract this for negative derivative
             let derivative_adjust = if self.heating_battery {
                 let deriv_val = BATTERY_HEATING_KD * smoothed_d_tmax_dt;
-                if deriv_val.is_nan() { 0.0 } else { deriv_val }
+                if deriv_val.is_nan() {
+                    0.0
+                } else {
+                    deriv_val
+                }
             } else {
                 0.0
             };
@@ -694,9 +705,17 @@ impl MainState {
             );
 
             // Update state
-            self.battery_heating_prev_battery_tmax = if !battery_tmax.is_nan() { battery_tmax } else { self.battery_heating_prev_battery_tmax };
+            self.battery_heating_prev_battery_tmax = if !battery_tmax.is_nan() {
+                battery_tmax
+            } else {
+                self.battery_heating_prev_battery_tmax
+            };
             self.battery_heating_prev_millis = current_millis;
-            self.battery_heating_prev_d_tmax_dt = if !smoothed_d_tmax_dt.is_nan() { smoothed_d_tmax_dt } else { 0.0 };
+            self.battery_heating_prev_d_tmax_dt = if !smoothed_d_tmax_dt.is_nan() {
+                smoothed_d_tmax_dt
+            } else {
+                0.0
+            };
 
             // Update cooling fan
             // TODO: Trigger on inverter, motor and OBC temperature also
@@ -910,7 +929,7 @@ impl MainState {
             self.send_normal_frame(hw, 0x206, &data);
         }
 
-        if(!hw.get_digital_input(DigitalInput::Ignition)){
+        if (!hw.get_digital_input(DigitalInput::Ignition)) {
             // Command the power steering pump off if ignition is off
             // Sometimes it stays running after turning ignition off, and I'm
             // not sure why that is. Sending this should fix that
