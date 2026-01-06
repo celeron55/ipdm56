@@ -132,6 +132,14 @@ fn get_current_heater_power() -> f32 {
         * power_per_percent
 }
 
+fn get_current_system_power() -> f32 {
+    let heater_power = get_current_heater_power();
+    let dc_v = get_parameter(ParameterId::ObcDcv).value;
+    let bias_power = 0.11 * dc_v; // 0.11A bias for safety margin
+
+    heater_power + bias_power
+}
+
 const ObcDcdc12VSupply: DigitalOutput = DigitalOutput::HOUT1;
 const DcdcEnable: DigitalOutput = DigitalOutput::HOUT6;
 const BatteryPump: DigitalOutput = DigitalOutput::HOUT4;
@@ -999,7 +1007,7 @@ impl MainState {
                 let heater_DCA = if get_parameter(ParameterId::BatteryVMax).value >= 4.18 {
                     0.0
                 } else {
-                    get_current_heater_power() / dc_v
+                    get_current_system_power() / dc_v
                 };
                 let bms_limit_DCA =
                     get_parameter(ParameterId::BmsMaxChargeCurrent).value + heater_DCA;
