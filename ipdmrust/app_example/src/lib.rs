@@ -406,12 +406,13 @@ impl MainState {
 
         // ActivateObc applies only to AC charging and ends up instructing
         // Foccci into AC charging mode. We want to activate the OBC if charging
-        // or heating, but only if we're plugged in
+        // or heating, but only if we're plugged in. Also keep it active for
+        // system power replenishment when charge is complete but system needs power.
         let activate_obc = get_parameter(ParameterId::FoccciCPPWM).value >= 8.0
             && get_parameter(ParameterId::FoccciCPPWM).value <= 96.0
             && (get_parameter(ParameterId::ChargeComplete).value < 0.5
                 || get_parameter(ParameterId::ChargeComplete).value.is_nan()
-                || get_parameter(ParameterId::ReqHeaterPowerPercent).value > 5.0);
+                || get_current_system_power() > 20.0);
 
         get_parameter(ParameterId::ActivateObc)
             .set_value(if activate_obc { 1.0 } else { 0.0 }, hw.millis());
