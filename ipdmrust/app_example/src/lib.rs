@@ -585,10 +585,13 @@ impl MainState {
                 } else if get_parameter(ParameterId::OutlanderHeaterT).value > 73.0 {
                     // Heater temperature indicates lots of excess heat being available (diesel heater)
                     22.0
-                } else if get_parameter(ParameterId::HvacRequested).value > 0.5
-                    || get_parameter(ParameterId::OutlanderHeaterT).value > 65.0
-                {
-                    // HVAC remote request or heater temperature indicates excess heat being available (diesel heater)
+                } else if get_parameter(ParameterId::OutlanderHeaterT).value > 65.0 {
+                    // Heater temperature indicates excess heat being available (diesel heater)
+                    7.0
+                } else if get_parameter(ParameterId::HvacRequested).value > 0.5 &&
+                        get_parameter(ParameterId::CabinT).value > 0.0 {
+                    // HVAC remote request and cabin has warmed up to
+                    // non-freezing
                     7.0
                 } else if get_parameter(ParameterId::FoccciCPPWM).value > 2.0
                     && get_parameter(ParameterId::ChargeComplete).value < 0.5
@@ -639,14 +642,17 @@ impl MainState {
                 // Full availability if ignition=false, hvac_req=false and plugged in
                 1.0
             } else if battery_tmin < 3.0 && get_parameter(ParameterId::CabinT).value > 15.0 {
-                // 50% availability
+                // 50% availability because cabin is warm
                 0.5
             } else if battery_tmin < 3.0 && get_parameter(ParameterId::CabinT).value > 8.0 {
-                // 25% availability
+                // 25% availability because cabin is somewhat warm
                 0.25
-            } else {
-                // 12.5% default availability
+            } else if battery_tmin < 3.0 && get_parameter(ParameterId::CabinT).value > 0.0 {
+                // 12.5% availability because cabin is not freezing
                 0.125
+            } else {
+                // 6.25% default availability
+                0.0625
             };
 
             let base_pwm = (prop_pwm * availability_factor).max(0.0).min(1.0);
