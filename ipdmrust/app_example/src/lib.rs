@@ -22,6 +22,7 @@ use ringbuffer::RingBuffer;
 
 // Two Outlander heaters in parallel at 263V nominal
 const HEATER_FULL_POWER_W: f32 = 6000.0;
+const SYSTEM_POWER_W: f32 = 93.0;
 
 const BATTERY_HEATING_KP: f32 = 0.2;
 const BATTERY_HEATING_KD: f32 = 1.0;
@@ -135,7 +136,7 @@ fn get_current_heater_power() -> f32 {
 fn get_current_system_power() -> f32 {
     let heater_power = get_current_heater_power();
     let dc_v = get_parameter(ParameterId::ObcDcv).value;
-    let bias_power = 0.11 * dc_v; // 0.11A bias for safety margin
+    let bias_power = SYSTEM_POWER_W;
 
     heater_power + bias_power
 }
