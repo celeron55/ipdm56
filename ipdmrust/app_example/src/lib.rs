@@ -326,16 +326,30 @@ impl MainState {
         }
 
         // This is to charge the 12V battery
-        let daily_wakeup = (hw.millis() > (1000 * 3600 * 2)
-            && (
-                // Always every 24h for 60min
-                hw.millis() % (1000 * 3600 * 24) < (1000 * 60 * 60)
-                    || (
-                        // Every 4h for 30min if 12V battery is low
-                        hw.millis() % (1000 * 3600 * 4) < (1000 * 60 * 30)
-                            && hw.millis() - self.last_aux_low_ms < 1000 * 3600
-                    )
-            ));
+        let daily_wakeup = (
+            // Wake up 2 hours from boot at earliest
+            hw.millis() > (1000 * 3600 * 2)
+                && ((
+                    // Always every 24h for 60min + 10min extra for every 1°C below
+                    // 0°C of CabinT
+                    hw.millis() % (1000 * 3600 * 24)
+                        < (1000 * 60 * 60
+                            + 1000
+                                * 60
+                                * map_f32(
+                                    get_parameter(ParameterId::CabinT).value,
+                                    0.0,
+                                    -1.0,
+                                    0.0,
+                                    10.0,
+                                )
+                                .clamp(0.0, 240.0) as u64)
+                ) || (
+                    // Every 4h for 30min if 12V battery is low
+                    hw.millis() % (1000 * 3600 * 4) < (1000 * 60 * 30)
+                        && hw.millis() - self.last_aux_low_ms < 1000 * 3600
+                ))
+        );
 
         get_parameter(ParameterId::ReqWakeupAndContactor).set_value(
             if (ignition_input
