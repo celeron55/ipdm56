@@ -1128,6 +1128,8 @@ impl MainState {
         {
             // More stuff in a newer message
 
+            let uptime_minutes = (hw.millis() / (1000 * 60)) as u16;
+
             self.send_normal_frame(
                 hw,
                 0x208,
@@ -1135,8 +1137,8 @@ impl MainState {
                     0, // Reserved for flag bits
                     (get_parameter(ParameterId::EvaporatorT).value as i8) as u8,
                     get_parameter(ParameterId::AcCompressorPercent).value as u8,
-                    0,
-                    0,
+                    (uptime_minutes >> 8) as u8,   // Uptime in minutes, MSB
+                    (uptime_minutes & 0xff) as u8, // Uptime in minutes, LSB
                     0,
                     0,
                     0,
