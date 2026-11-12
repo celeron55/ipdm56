@@ -120,7 +120,7 @@ bool can_receive(MCP_CAN &mcp_can, CAN_FRAME &frame)
 void can_receive(MCP_CAN &mcp_can, void (*handle_frame)(const CAN_FRAME &frame))
 {
 	if(!can_initialized)
-		return false;
+		return;
 	for(uint8_t i=0; i<10; i++){
 		CAN_FRAME frame;
 		if(!can_receive(mcp_can, frame))
